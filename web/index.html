@@ -1,0 +1,625 @@
+<title>Äggtimern</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* Äggtimern — samma palett och fysik som mobilappen, i ren HTML/CSS/JS. */
+  @property --amp { syntax: '<number>'; initial-value: 0; inherits: true; }
+  @property --sagx { syntax: '<number>'; initial-value: 1; inherits: true; }
+  @property --sagy { syntax: '<number>'; initial-value: 1; inherits: true; }
+
+  :root {
+    --bg: #f7f3ec;
+    --card: #ffffff;
+    --ink: #211d19;
+    --ink-soft: #988f85;
+    --ink-faint: #c4bcb1;
+    --line: #eae3d8;
+    --yolk: #f2a03d;
+    --yolk-deep: #e07a2f;
+    --white: #fffdf8;
+    --water: #ddedf2;
+    --water-deep: #b8d8e3;
+    --danger: #c4553b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    overflow: hidden;
+  }
+
+  .view { display: none; height: 100dvh; }
+  .view.active { display: flex; flex-direction: column; }
+
+  /* ---------- Inställningar ---------- */
+  #setup .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(10px, 1.8dvh, 20px);
+    padding: clamp(10px, 1.6dvh, 18px) 20px 116px;
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
+    overflow-y: auto;
+  }
+
+  .wordmark {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 5px;
+    padding-top: 4px;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .section { display: flex; flex-direction: column; gap: 8px; }
+  .value { font-size: 15px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .hint { font-size: 13px; color: var(--ink-soft); text-align: center; }
+
+  /* Ägget */
+  .egg-stage { display: flex; justify-content: center; }
+  .egg {
+    position: relative;
+    width: clamp(118px, 22dvh, 168px);
+    aspect-ratio: 200 / 240;
+    transition: width 0.35s cubic-bezier(0.34, 1.4, 0.5, 1);
+  }
+  .egg svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .yolk-wrap {
+    position: absolute;
+    left: 50%;
+    top: 59.2%;
+    width: 62%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    animation: wobble 1.3s ease-in-out infinite;
+    transition: --amp 0.4s, --sagx 0.4s, --sagy 0.4s;
+  }
+  @keyframes wobble {
+    0%, 100% { transform: scale(var(--sagx), var(--sagy)); }
+    25% { transform: scale(calc(var(--sagx) * (1 + var(--amp))), calc(var(--sagy) * (1 - var(--amp)))); }
+    75% { transform: scale(calc(var(--sagx) * (1 - var(--amp))), calc(var(--sagy) * (1 + var(--amp)))); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .yolk-wrap { animation: none; }
+  }
+  .yolk-wrap svg { width: 100%; height: 100%; display: block; }
+  #yolk-stop-a { transition: stop-color 0.4s; }
+  #yolk-stop-b { transition: stop-color 0.4s; }
+  #yolk-shine { transition: opacity 0.4s; }
+
+  /* Gulans utseende per konsistens */
+  .egg[data-d='soft']   { --amp: 0.055; --sagx: 1.14; --sagy: 0.88; }
+  .egg[data-d='creamy'] { --amp: 0.032; --sagx: 1.07; --sagy: 0.94; }
+  .egg[data-d='firm']   { --amp: 0.012; --sagx: 1.02; --sagy: 0.98; }
+  .egg[data-d='hard']   { --amp: 0;     --sagx: 1;    --sagy: 1; }
+  .egg[data-d='soft']   { --yc-edge: #ffc25e; --yc-center: #f58a1f; --shine: 0.5; }
+  .egg[data-d='creamy'] { --yc-edge: #fccb6e; --yc-center: #f49b2e; --shine: 0.32; }
+  .egg[data-d='firm']   { --yc-edge: #fbd787; --yc-center: #f5b23f; --shine: 0.14; }
+  .egg[data-d='hard']   { --yc-edge: #f7e3ac; --yc-center: #f0c464; --shine: 0; }
+
+  /* Segmenterad väljare */
+  .seg {
+    position: relative;
+    display: flex;
+    background: var(--line);
+    border-radius: 18px;
+    padding: 4px;
+  }
+  .seg .pill {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(33, 29, 25, 0.1);
+    transition: left 0.35s cubic-bezier(0.34, 1.3, 0.44, 1);
+  }
+  .seg button {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 8px 2px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-radius: 14px;
+  }
+  .seg button.on { color: var(--ink); font-weight: 600; }
+  .seg button small { font-size: 10px; color: var(--ink-faint); font-weight: 400; }
+  .seg button.on small { color: var(--ink-soft); }
+  .seg button:focus-visible { outline: 2px solid var(--yolk); outline-offset: -2px; }
+
+  /* Reglage */
+  input[type='range'] { width: 100%; height: 30px; appearance: none; -webkit-appearance: none; background: none; cursor: pointer; }
+  input[type='range']::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, var(--yolk) var(--fill, 0%), var(--line) var(--fill, 0%));
+  }
+  input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    margin-top: -9px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(33, 29, 25, 0.16);
+  }
+  input[type='range']::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line); }
+  input[type='range']::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--yolk); }
+  input[type='range']::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--card); border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(33, 29, 25, 0.16);
+  }
+  input[type='range']:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; border-radius: 4px; }
+
+  .ghost-btn {
+    border: 1px solid var(--line);
+    background: none;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .ghost-btn:focus-visible { outline: 2px solid var(--yolk); }
+  .error { font-size: 13px; color: var(--danger); }
+
+  /* Fot med koktid */
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    translate: -50%;
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+    background: var(--card);
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -4px 16px rgba(33, 29, 25, 0.08);
+  }
+  .footer time { font-size: 34px; font-weight: 200; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .start-btn {
+    border: 0;
+    background: var(--yolk);
+    color: var(--white);
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 14px 40px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(224, 122, 47, 0.35);
+    cursor: pointer;
+  }
+  .start-btn:active { transform: scale(0.97); }
+  .start-btn:focus-visible { outline: 3px solid var(--ink); }
+  .warning { font-size: 13px; color: var(--danger); }
+
+  /* ---------- Timer ---------- */
+  #timer { align-items: center; justify-content: center; gap: 18px; padding: 28px; text-align: center; }
+  .ring-wrap { position: relative; width: min(300px, 72vw, 40dvh); aspect-ratio: 1; }
+  .ring-wrap > svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--line); stroke-width: 5; }
+  .ring-fill { fill: none; stroke: var(--yolk); stroke-width: 5; stroke-linecap: round; }
+
+  .scene {
+    position: absolute;
+    inset: 7.5%;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .float-egg {
+    position: absolute;
+    bottom: 18%;
+    left: 35%;
+    width: 30%;
+    z-index: 1;
+    animation: bob 2.8s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(-6px) rotate(-4deg); }
+    50% { transform: translateY(4px) rotate(4deg); }
+  }
+  .wave { position: absolute; bottom: 0; left: 0; width: 220%; }
+  .wave svg { display: block; width: 100%; }
+  .wave-a { animation: drift 5.2s linear infinite; }
+  .wave-b { opacity: 0.75; animation: drift 3.6s linear infinite; }
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(-27%); } }
+  .bubble {
+    position: absolute;
+    bottom: 6%;
+    border-radius: 50%;
+    background: #fff;
+    animation: rise 2.4s ease-in infinite;
+  }
+  @keyframes rise {
+    from { transform: translateY(0); opacity: 0.9; }
+    to { transform: translateY(-64px); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .float-egg, .wave-a, .wave-b, .bubble { animation: none; }
+  }
+
+  .badge {
+    width: 44%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--yolk);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: popin 0.5s cubic-bezier(0.34, 1.5, 0.5, 1);
+  }
+  .badge::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--yolk);
+    animation: halo 1.8s ease-out infinite;
+    z-index: -1;
+  }
+  @keyframes popin { from { transform: scale(0.3); } to { transform: scale(1); } }
+  @keyframes halo { from { transform: scale(1); opacity: 0.35; } to { transform: scale(1.55); opacity: 0; } }
+  .badge svg { width: 50%; }
+
+  #timer.done .pot { display: none; }
+  #timer.done .badge { display: flex; }
+
+  .big-time { font-size: 68px; font-weight: 200; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+  .timer-sub { font-size: 13px; color: var(--ink-soft); max-width: 300px; }
+  .timer-label { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); }
+  .cancel-btn {
+    border: 1px solid var(--ink-faint);
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px 44px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .cancel-btn.primary { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .cancel-btn:focus-visible { outline: 3px solid var(--yolk); }
+</style>
+
+<!-- ================= INSTÄLLNINGAR ================= -->
+<div class="view active" id="setup">
+  <div class="content">
+    <div class="wordmark">ÄGGTIMERN</div>
+
+    <div class="egg-stage">
+      <div class="egg" id="egg" data-d="creamy">
+        <svg viewBox="0 0 200 240" aria-hidden="true">
+          <defs>
+            <radialGradient id="gw" cx="50%" cy="42%" r="70%">
+              <stop offset="0%" stop-color="#ffffff" />
+              <stop offset="100%" stop-color="#f4eee2" />
+            </radialGradient>
+          </defs>
+          <path d="M100 14 C145 14 172 70 172 130 C172 185 140 226 100 226 C60 226 28 185 28 130 C28 70 55 14 100 14 Z"
+            fill="url(#gw)" stroke="#eae3d8" stroke-width="3" />
+        </svg>
+        <div class="yolk-wrap">
+          <svg viewBox="0 0 124 124" aria-hidden="true">
+            <defs>
+              <radialGradient id="gy" cx="42%" cy="38%" r="72%">
+                <stop id="yolk-stop-a" offset="0%" style="stop-color: var(--yc-edge)" />
+                <stop id="yolk-stop-b" offset="100%" style="stop-color: var(--yc-center)" />
+              </radialGradient>
+            </defs>
+            <circle cx="62" cy="62" r="54" fill="url(#gy)" />
+            <ellipse id="yolk-shine" cx="48" cy="46" rx="14" ry="9" fill="#fff"
+              style="opacity: var(--shine)" transform="rotate(-24 48 46)" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Konsistens</div>
+      <div class="seg" id="seg-doneness"></div>
+      <div class="hint" id="doneness-hint"></div>
+    </div>
+
+    <div class="section">
+      <div class="row">
+        <div class="label">Vikt</div>
+        <div class="value"><span id="grams-out">58</span> g</div>
+      </div>
+      <div class="seg" id="seg-size"></div>
+      <input type="range" id="grams" min="40" max="90" step="1" value="58" aria-label="Vikt i gram" />
+    </div>
+
+    <div class="section">
+      <div class="label">Starttemperatur</div>
+      <div class="seg" id="seg-temp"></div>
+    </div>
+
+    <div class="section">
+      <div class="row">
+        <div class="label">Höjd över havet</div>
+        <div class="value"><span id="alt-out">0</span> m</div>
+      </div>
+      <input type="range" id="alt" min="0" max="4500" step="50" value="0" aria-label="Höjd över havet i meter" />
+      <div class="row">
+        <div class="hint" id="boil-out" style="text-align:left"></div>
+        <button class="ghost-btn" id="gps">Hämta via GPS</button>
+      </div>
+      <div class="error" id="gps-err" hidden></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div id="footer-ok">
+      <div class="label">Koktid</div>
+      <time id="time-out">5:22</time>
+    </div>
+    <div class="warning" id="footer-warn" hidden></div>
+    <button class="start-btn" id="start">Starta</button>
+  </div>
+</div>
+
+<!-- ================= TIMER ================= -->
+<div class="view" id="timer">
+  <div class="timer-label" id="timer-label">Kokar</div>
+  <div class="ring-wrap">
+    <svg viewBox="0 0 300 300" aria-hidden="true">
+      <circle class="ring-track" cx="150" cy="150" r="147.5" />
+      <circle class="ring-fill" id="ring" cx="150" cy="150" r="147.5" />
+    </svg>
+    <div class="scene">
+      <div class="pot" style="position:absolute;inset:0">
+        <div class="float-egg">
+          <svg viewBox="0 0 200 240" aria-hidden="true">
+            <defs>
+              <radialGradient id="gs" cx="40%" cy="32%" r="80%">
+                <stop offset="0%" stop-color="#fffefb" />
+                <stop offset="100%" stop-color="#efe7d8" />
+              </radialGradient>
+            </defs>
+            <path d="M100 14 C145 14 172 70 172 130 C172 185 140 226 100 226 C60 226 28 185 28 130 C28 70 55 14 100 14 Z" fill="url(#gs)" />
+          </svg>
+        </div>
+        <div class="wave wave-a" id="wave-a"></div>
+        <div class="wave wave-b" id="wave-b"></div>
+        <div class="bubble" style="left:24%;width:7px;height:7px"></div>
+        <div class="bubble" style="left:48%;width:5px;height:5px;animation-delay:0.7s;animation-duration:1.9s"></div>
+        <div class="bubble" style="left:66%;width:8px;height:8px;animation-delay:0.3s;animation-duration:2.8s"></div>
+        <div class="bubble" style="left:82%;width:5px;height:5px;animation-delay:1.2s;animation-duration:2.1s"></div>
+      </div>
+      <div class="badge">
+        <svg viewBox="0 0 64 64"><path d="M16 33 L27 44 L48 22" stroke="#fffdf8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none" /></svg>
+      </div>
+    </div>
+  </div>
+  <div class="big-time" id="big-time">0:00</div>
+  <div class="timer-sub" id="timer-sub"></div>
+  <button class="cancel-btn" id="cancel">Avbryt</button>
+</div>
+
+<script>
+  'use strict';
+  /* ===== Fysiken — Charles D. H. Williams formel (Univ. of Exeter, 1998) =====
+     t = 0.451 · M^(2/3) · ln( 0.76 · (T_vatten − T_ägg) / (T_vatten − T_gula) )
+     Kokpunkten vid höjd: barometriska formeln + Clausius–Clapeyron. */
+  function boilingPointC(altitudeM) {
+    const P0 = 101.325;
+    const p = P0 * Math.pow(1 - 2.25577e-5 * altitudeM, 5.25588);
+    const T = 1 / (1 / 373.15 - (8.3145 * Math.log(p / P0)) / 40660);
+    return T - 273.15;
+  }
+  function cookSeconds(massG, startC, yolkC, altitudeM) {
+    const waterC = boilingPointC(altitudeM);
+    if (yolkC >= waterC - 1) return { seconds: null, waterC };
+    const ratio = (0.76 * (waterC - startC)) / (waterC - yolkC);
+    if (ratio <= 1) return { seconds: 0, waterC };
+    return { seconds: Math.round(0.451 * Math.pow(massG, 2 / 3) * Math.log(ratio) * 60), waterC };
+  }
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const sv = (n, d = 1) => n.toFixed(d).replace('.', ',');
+
+  const DONENESS = [
+    { key: 'soft', label: 'Löskokt', desc: 'Rinnande gula', yolkC: 63 },
+    { key: 'creamy', label: 'Krämig', desc: 'Tjock, gyllene kräm', yolkC: 67 },
+    { key: 'firm', label: 'Fast', desc: 'Fast men fuktig gula', yolkC: 71 },
+    { key: 'hard', label: 'Hårdkokt', desc: 'Helt genomkokt', yolkC: 77 },
+  ];
+  const SIZES = [
+    { key: 's', label: 'S', grams: 48 },
+    { key: 'm', label: 'M', grams: 58 },
+    { key: 'l', label: 'L', grams: 68 },
+    { key: 'xl', label: 'XL', grams: 78 },
+  ];
+  const TEMPS = [
+    { key: 'fridge', label: 'Kylskåpskallt', sub: '4 °C', c: 4 },
+    { key: 'room', label: 'Rumsvarmt', sub: '20 °C', c: 20 },
+  ];
+
+  const state = { doneness: 'creamy', grams: 58, temp: 'fridge', alt: 0 };
+  const $ = (id) => document.getElementById(id);
+
+  /* Segmenterad väljare med glidande indikator */
+  function buildSeg(el, options, getActive, onPick) {
+    const pill = document.createElement('span');
+    pill.className = 'pill';
+    el.appendChild(pill);
+    options.forEach((o) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = o.sub ? `${o.label}<small>${o.sub}</small>` : o.label;
+      b.addEventListener('click', () => { onPick(o); render(); });
+      el.appendChild(b);
+    });
+    return () => {
+      const idx = options.findIndex((o) => o.key === getActive());
+      const w = 100 / options.length;
+      pill.style.width = `calc(${w}% - ${8 / options.length}px)`;
+      pill.style.left = idx < 0 ? '4px' : `calc(4px + ${idx * w}%)`;
+      pill.style.opacity = idx < 0 ? '0' : '1';
+      [...el.querySelectorAll('button')].forEach((b, i) => b.classList.toggle('on', i === idx));
+    };
+  }
+
+  const upd = [
+    buildSeg($('seg-doneness'), DONENESS, () => state.doneness, (o) => (state.doneness = o.key)),
+    buildSeg($('seg-size'), SIZES, () => SIZES.find((s) => s.grams === state.grams)?.key, (o) => {
+      state.grams = o.grams;
+      $('grams').value = o.grams;
+    }),
+    buildSeg($('seg-temp'), TEMPS, () => state.temp, (o) => (state.temp = o.key)),
+  ];
+
+  function sliderFill(input) {
+    const pct = ((input.value - input.min) / (input.max - input.min)) * 100;
+    input.style.setProperty('--fill', pct + '%');
+  }
+  $('grams').addEventListener('input', (e) => { state.grams = +e.target.value; render(); });
+  $('alt').addEventListener('input', (e) => { state.alt = +e.target.value; render(); });
+
+  $('gps').addEventListener('click', () => {
+    $('gps-err').hidden = true;
+    if (!navigator.geolocation) return showGpsErr('Ingen platstjänst i den här webbläsaren — dra i reglaget i stället.');
+    $('gps').textContent = 'Hämtar…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        $('gps').textContent = 'Hämta via GPS';
+        if (pos.coords.altitude == null) return showGpsErr('Ingen höjddata från GPS:en — dra i reglaget i stället.');
+        state.alt = Math.min(4500, Math.max(0, Math.round(pos.coords.altitude / 10) * 10));
+        $('alt').value = state.alt;
+        render();
+      },
+      () => { $('gps').textContent = 'Hämta via GPS'; showGpsErr('Kunde inte hämta position — dra i reglaget i stället.'); },
+      { timeout: 8000 }
+    );
+  });
+  function showGpsErr(msg) { const e = $('gps-err'); e.textContent = msg; e.hidden = false; }
+
+  function calc() {
+    const d = DONENESS.find((x) => x.key === state.doneness);
+    const t = TEMPS.find((x) => x.key === state.temp);
+    return { d, t, ...cookSeconds(state.grams, t.c, d.yolkC, state.alt) };
+  }
+
+  function render() {
+    const { d, seconds, waterC } = calc();
+    $('egg').dataset.d = state.doneness;
+    $('doneness-hint').textContent = `${d.desc} · ${d.yolkC} °C i gulans mitt`;
+    $('grams-out').textContent = state.grams;
+    $('alt-out').textContent = state.alt;
+    $('boil-out').textContent = `Vattnet kokar vid ${sv(waterC)} °C`;
+    sliderFill($('grams'));
+    sliderFill($('alt'));
+    const ok = seconds !== null;
+    $('footer-ok').style.display = ok ? '' : 'none';
+    $('start').style.display = ok ? '' : 'none';
+    $('footer-warn').hidden = ok;
+    if (ok) $('time-out').textContent = fmt(seconds);
+    else $('footer-warn').textContent = `På ${state.alt} m kokar vattnet vid ${sv(waterC, 0)} °C — gulan kan aldrig nå ${d.yolkC} °C. Välj en lösare konsistens.`;
+    upd.forEach((u) => u());
+  }
+
+  /* Vågor i grytan */
+  function wave(el, color) {
+    const seg = 60, W = 720, amp = 14;
+    let dPath = `M0 ${amp}`;
+    for (let x = 0; x < W; x += seg) dPath += ` Q${x + seg / 4} 0 ${x + seg / 2} ${amp} T${x + seg} ${amp}`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} 200" preserveAspectRatio="none" style="height:${el.classList.contains('wave-a') ? 92 : 78}px"><path d="${dPath} L${W} 200 L0 200 Z" fill="${color}"/></svg>`;
+  }
+  wave($('wave-a'), '#ddedf2');
+  wave($('wave-b'), '#b8d8e3');
+
+  /* ===== Timern ===== */
+  const RING_C = 2 * Math.PI * 147.5;
+  $('ring').style.strokeDasharray = RING_C;
+  let endAt = 0, total = 0, raf = 0;
+
+  $('start').addEventListener('click', () => {
+    const { d, t, seconds, waterC } = calc();
+    if (!seconds) return;
+    total = seconds;
+    endAt = Date.now() + seconds * 1000;
+    $('timer-sub').textContent = `${d.label} · ${state.grams} g · ${t.label.toLowerCase()} · vattnet kokar vid ${sv(waterC)} °C`;
+    $('timer').classList.remove('done');
+    $('timer-label').textContent = 'Kokar';
+    $('cancel').textContent = 'Avbryt';
+    $('cancel').classList.remove('primary');
+    show('timer');
+    tick();
+  });
+
+  function tick() {
+    const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+    $('big-time').textContent = fmt(left);
+    $('ring').style.strokeDashoffset = RING_C * Math.max(0, (endAt - Date.now()) / (total * 1000));
+    if (left <= 0) return finish();
+    raf = requestAnimationFrame(tick);
+  }
+
+  function finish() {
+    $('timer').classList.add('done');
+    $('timer-label').textContent = 'Färdigt';
+    $('big-time').textContent = 'Klart!';
+    $('timer-sub').textContent = 'Spola ägget under kallt vatten så stannar tillagningen.';
+    $('cancel').textContent = 'Nytt ägg';
+    $('cancel').classList.add('primary');
+    $('ring').style.strokeDashoffset = 0;
+    if (navigator.vibrate) navigator.vibrate([200, 120, 200, 120, 400]);
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.22, 0.44].forEach((t0, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = [880, 1100, 1320][i];
+        g.gain.setValueAtTime(0.001, ctx.currentTime + t0);
+        g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + t0 + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t0 + 0.2);
+        o.start(ctx.currentTime + t0); o.stop(ctx.currentTime + t0 + 0.22);
+      });
+    } catch (e) { /* ljud är inte kritiskt */ }
+  }
+
+  $('cancel').addEventListener('click', () => {
+    cancelAnimationFrame(raf);
+    show('setup');
+  });
+
+  function show(id) {
+    document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === id));
+  }
+
+  render();
+</script>
