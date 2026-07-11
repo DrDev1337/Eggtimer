@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
     gap: 1,
   },
   label: { fontSize: 14, fontWeight: '500', color: colors.inkSoft },

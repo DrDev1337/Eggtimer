@@ -10,7 +10,7 @@ interface Props {
   onChange: (value: number) => void;
 }
 
-const KNOB = 26;
+const KNOB = 22;
 
 /** Minimal slider byggd på PanResponder — fungerar på iOS, Android och webb. */
 export function Slider({ min, max, step, value, onChange }: Props) {
@@ -57,7 +57,7 @@ export function Slider({ min, max, step, value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { height: 40, justifyContent: 'center' },
+  container: { height: 30, justifyContent: 'center' },
   track: {
     position: 'absolute',
     left: 0,

@@ -116,7 +116,7 @@ export default function App() {
             <Text style={styles.value}>{grams} g</Text>
           </View>
           <Segmented
-            options={SIZES.map((s) => ({ key: s.key, label: s.label, sub: s.range }))}
+            options={SIZES.map((s) => ({ key: s.key, label: s.label }))}
             value={sizeKey ?? ('' as SizeKey)}
             onChange={(k) => setGrams(SIZES.find((s) => s.key === k)!.grams)}
           />
@@ -186,10 +186,10 @@ export default function App() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   scroll: {
-    padding: space.l,
-    paddingTop: Platform.OS === 'android' ? space.xl + 12 : space.m,
-    paddingBottom: 120,
-    gap: space.l,
+    paddingHorizontal: space.m,
+    paddingTop: Platform.OS === 'android' ? space.xl : space.s,
+    paddingBottom: 104,
+    gap: 18,
     maxWidth: 560,
     width: '100%',
     alignSelf: 'center',
@@ -200,8 +200,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
     letterSpacing: 4,
   },
-  eggWrap: { alignItems: 'center', marginVertical: -space.s },
-  section: { gap: space.s },
+  eggWrap: { alignItems: 'center', marginVertical: -2 },
+  section: { gap: 8 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   hint: { ...font.caption, textAlign: 'center' },
   value: { ...font.body, fontVariant: ['tabular-nums'], color: colors.inkSoft },
@@ -224,9 +224,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: space.l,
-    paddingVertical: space.m,
-    paddingBottom: Platform.OS === 'ios' ? space.l + 8 : space.m,
+    paddingHorizontal: space.m,
+    paddingVertical: space.s + 2,
+    paddingBottom: Platform.OS === 'ios' ? space.l : space.s + 2,
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.l,
     borderTopRightRadius: radius.l,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   footerTime: {
-    fontSize: 40,
+    fontSize: 34,
     fontWeight: '200',
     letterSpacing: -1,
     color: colors.ink,
@@ -249,8 +249,8 @@ const styles = StyleSheet.create({
   startButton: {
     backgroundColor: colors.yolk,
     borderRadius: radius.pill,
-    paddingVertical: 16,
-    paddingHorizontal: 44,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
     shadowColor: colors.yolkDeep,
     shadowOpacity: 0.35,
     shadowRadius: 12,
