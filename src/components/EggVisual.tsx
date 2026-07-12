@@ -9,77 +9,87 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Ellipse,
+  LinearGradient,
+  Path,
+  RadialGradient,
+  Stop,
+} from 'react-native-svg';
 import { DonenessKey } from '../physics/egg';
 import { colors } from '../theme';
-
-/**
- * Gulans beteende per fasthet: färg, glans, hur mycket den dallrar
- * (wobble) och hur mycket den sjunker ihop av sin egen vikt (sag).
- * En lös gula är blank, dallrig och utflytande; en hårdkokt är blek,
- * matt och ligger blickstilla.
- */
-const YOLK: Record<
-  DonenessKey,
-  { center: string; edge: string; shine: number; wobble: number; sagX: number; sagY: number }
-> = {
-  soft: { center: '#F58A1F', edge: '#FFC25E', shine: 0.5, wobble: 0.055, sagX: 1.14, sagY: 0.88 },
-  creamy: { center: '#F49B2E', edge: '#FCCB6E', shine: 0.32, wobble: 0.032, sagX: 1.07, sagY: 0.94 },
-  firm: { center: '#F5B23F', edge: '#FBD787', shine: 0.14, wobble: 0.012, sagX: 1.02, sagY: 0.98 },
-  hard: { center: '#F0C464', edge: '#F7E3AC', shine: 0, wobble: 0, sagX: 1, sagY: 1 },
-};
 
 export const EGG_PATH =
   'M100 14 C145 14 172 70 172 130 C172 185 140 226 100 226 C60 226 28 185 28 130 C28 70 55 14 100 14 Z';
 
-// Äggets ritstorlek och gulans läge i samma skala.
+/** Utrunnen gula i det löskokta ägget. */
+const SPILL_PATH =
+  'M64 148 C57 182 68 204 86 209 C96 212 110 211 120 205 C135 197 142 174 136 148 Z';
+
+/** Dallret: löskokt skakar mest, hårdkokt ligger still. */
+const WOBBLE: Record<DonenessKey, { amp: number; sagX: number; sagY: number }> = {
+  soft: { amp: 0.03, sagX: 1.06, sagY: 0.96 },
+  creamy: { amp: 0.018, sagX: 1.03, sagY: 0.98 },
+  firm: { amp: 0.007, sagX: 1.01, sagY: 0.995 },
+  hard: { amp: 0, sagX: 1, sagY: 1 },
+};
+
 const W = 152;
 const H = 182;
-const SCALE = W / 200;
-const YOLK_R = 54 * SCALE;
-const YOLK_CX = 100 * SCALE;
-const YOLK_CY = 142 * SCALE;
-const YOLK_BOX = YOLK_R * 2 + 16;
 
 interface Props {
   doneness: DonenessKey;
   grams: number;
 }
 
-/** Tvärsnitt av ett ägg — gulan dallrar efter vald fasthet, storleken följer vikten. */
+/**
+ * Tvärsnitt av ett ägg, ritat som konsistensen faktiskt ser ut:
+ * löskokt med blank gula som runnit ut, krämig med smält kärna,
+ * fast men fuktig, hårdkokt blek och matt.
+ */
 export function EggVisual({ doneness, grams }: Props) {
-  const look = YOLK[doneness];
   // 40–90 g mappas till 86–108 % storlek.
   const sizeScale = 0.86 + ((grams - 40) / 50) * 0.22;
+  const look = WOBBLE[doneness];
 
   const scale = useSharedValue(sizeScale);
   useEffect(() => {
     scale.value = withSpring(sizeScale, { damping: 14, stiffness: 180 });
   }, [sizeScale, scale]);
 
-  // Evig dallervåg −1…1; amplituden styrs av fastheten.
   const wob = useSharedValue(0);
+  const ooze = useSharedValue(0);
   useEffect(() => {
     wob.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 620, easing: Easing.inOut(Easing.sin) }),
-        withTiming(-1, { duration: 620, easing: Easing.inOut(Easing.sin) })
+        withTiming(1, { duration: 700, easing: Easing.inOut(Easing.sin) }),
+        withTiming(-1, { duration: 700, easing: Easing.inOut(Easing.sin) })
       ),
       -1,
       true
     );
-  }, [wob]);
+    ooze.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1400, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1,
+      true
+    );
+  }, [wob, ooze]);
 
-  const amp = useSharedValue(look.wobble);
+  const amp = useSharedValue(look.amp);
   const sagX = useSharedValue(look.sagX);
   const sagY = useSharedValue(look.sagY);
   const pop = useSharedValue(1);
   useEffect(() => {
-    amp.value = withTiming(look.wobble, { duration: 400 });
+    amp.value = withTiming(look.amp, { duration: 400 });
     sagX.value = withSpring(look.sagX, { damping: 11, stiffness: 160 });
     sagY.value = withSpring(look.sagY, { damping: 11, stiffness: 160 });
     pop.value = withSequence(
-      withTiming(0.92, { duration: 90 }),
+      withTiming(0.94, { duration: 90 }),
       withSpring(1, { damping: 9, stiffness: 240 })
     );
   }, [doneness, amp, sagX, sagY, pop, look]);
@@ -91,6 +101,9 @@ export function EggVisual({ doneness, grams }: Props) {
       { scaleX: sagX.value * (1 + amp.value * wob.value) },
       { scaleY: sagY.value * (1 - amp.value * wob.value) },
     ],
+  }));
+  const oozeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: ooze.value * 2.5 }],
   }));
 
   return (
@@ -105,25 +118,116 @@ export function EggVisual({ doneness, grams }: Props) {
           </Defs>
           <Path d={EGG_PATH} fill="url(#eggwhite)" stroke={colors.line} strokeWidth={3} />
         </Svg>
-        <Animated.View style={[styles.yolk, yolkStyle]}>
-          <Svg width={YOLK_BOX} height={YOLK_BOX} viewBox={`0 0 ${YOLK_BOX} ${YOLK_BOX}`}>
+        <Animated.View style={[StyleSheet.absoluteFill, yolkStyle]}>
+          {doneness === 'soft' && (
+            <Animated.View style={[StyleSheet.absoluteFill, oozeStyle]}>
+              <Svg width={W} height={H} viewBox="0 0 200 240">
+                <Defs>
+                  <LinearGradient id="spill" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%" stopColor="#EF820E" />
+                    <Stop offset="100%" stopColor="#FCA33C" />
+                  </LinearGradient>
+                </Defs>
+                <Path d={SPILL_PATH} fill="url(#spill)" />
+                <Ellipse
+                  cx={112}
+                  cy={192}
+                  rx={10}
+                  ry={4.5}
+                  fill="#FFFFFF"
+                  opacity={0.26}
+                  transform="rotate(-14 112 192)"
+                />
+              </Svg>
+            </Animated.View>
+          )}
+          <Svg width={W} height={H} viewBox="0 0 200 240">
             <Defs>
-              <RadialGradient id="yolkfill" cx="42%" cy="38%" r="72%">
-                <Stop offset="0%" stopColor={look.edge} />
-                <Stop offset="100%" stopColor={look.center} />
+              <RadialGradient id="ySoft" cx="40%" cy="34%" r="75%">
+                <Stop offset="0%" stopColor="#FFB648" />
+                <Stop offset="70%" stopColor="#F68A14" />
+                <Stop offset="100%" stopColor="#E87607" />
+              </RadialGradient>
+              <RadialGradient id="yCreamy" cx="42%" cy="36%" r="74%">
+                <Stop offset="0%" stopColor="#FBC866" />
+                <Stop offset="100%" stopColor="#F0932B" />
+              </RadialGradient>
+              <RadialGradient id="yCore" cx="50%" cy="50%" r="50%">
+                <Stop offset="0%" stopColor="#E87D13" />
+                <Stop offset="75%" stopColor="#EC8C20" />
+                <Stop offset="100%" stopColor="#F0932B" />
+              </RadialGradient>
+              <RadialGradient id="yFirm" cx="44%" cy="38%" r="72%">
+                <Stop offset="0%" stopColor="#FBDA8B" />
+                <Stop offset="100%" stopColor="#F2AE40" />
+              </RadialGradient>
+              <RadialGradient id="yHard" cx="46%" cy="42%" r="70%">
+                <Stop offset="0%" stopColor="#F6E4AB" />
+                <Stop offset="100%" stopColor="#EEC964" />
               </RadialGradient>
             </Defs>
-            <Circle cx={YOLK_BOX / 2} cy={YOLK_BOX / 2} r={YOLK_R} fill="url(#yolkfill)" />
-            {look.shine > 0 && (
-              <Ellipse
-                cx={YOLK_BOX / 2 - 12}
-                cy={YOLK_BOX / 2 - 14}
-                rx={13}
-                ry={8}
-                fill="#FFFFFF"
-                opacity={look.shine}
-                transform={`rotate(-24 ${YOLK_BOX / 2 - 12} ${YOLK_BOX / 2 - 14})`}
-              />
+
+            {doneness === 'soft' && (
+              <>
+                <Circle cx={100} cy={126} r={48} fill="url(#ySoft)" />
+                <Ellipse
+                  cx={84}
+                  cy={106}
+                  rx={15}
+                  ry={9.5}
+                  fill="#FFFFFF"
+                  opacity={0.55}
+                  transform="rotate(-22 84 106)"
+                />
+                <Ellipse
+                  cx={116}
+                  cy={146}
+                  rx={7}
+                  ry={4}
+                  fill="#FFFFFF"
+                  opacity={0.22}
+                  transform="rotate(28 116 146)"
+                />
+              </>
+            )}
+            {doneness === 'creamy' && (
+              <>
+                <Circle cx={100} cy={127} r={48} fill="url(#yCreamy)" />
+                <Circle cx={101} cy={133} r={27} fill="url(#yCore)" />
+                <Ellipse
+                  cx={85}
+                  cy={108}
+                  rx={13}
+                  ry={8}
+                  fill="#FFFFFF"
+                  opacity={0.32}
+                  transform="rotate(-22 85 108)"
+                />
+              </>
+            )}
+            {doneness === 'firm' && (
+              <>
+                <Circle cx={100} cy={127} r={48} fill="url(#yFirm)" />
+                <Ellipse
+                  cx={86}
+                  cy={110}
+                  rx={12}
+                  ry={7}
+                  fill="#FFFFFF"
+                  opacity={0.14}
+                  transform="rotate(-22 86 110)"
+                />
+              </>
+            )}
+            {doneness === 'hard' && (
+              <>
+                <Circle cx={100} cy={127} r={48} fill="url(#yHard)" />
+                <Circle cx={86} cy={118} r={2.4} fill="#F9EDC4" opacity={0.5} />
+                <Circle cx={108} cy={104} r={1.9} fill="#F9EDC4" opacity={0.45} />
+                <Circle cx={115} cy={140} r={2.6} fill="#F9EDC4" opacity={0.4} />
+                <Circle cx={94} cy={150} r={2} fill="#F9EDC4" opacity={0.45} />
+                <Circle cx={76} cy={136} r={1.7} fill="#F9EDC4" opacity={0.4} />
+              </>
             )}
           </Svg>
         </Animated.View>
@@ -131,13 +235,3 @@ export function EggVisual({ doneness, grams }: Props) {
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  yolk: {
-    position: 'absolute',
-    left: YOLK_CX - YOLK_BOX / 2,
-    top: YOLK_CY - YOLK_BOX / 2,
-    width: YOLK_BOX,
-    height: YOLK_BOX,
-  },
-});

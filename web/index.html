@@ -180,12 +180,9 @@
   .egg svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .yolk-wrap {
     position: absolute;
-    left: 50%;
-    top: 59.2%;
-    width: 62%;
-    aspect-ratio: 1;
-    translate: -50% -50%;
-    animation: wobble 1.3s ease-in-out infinite;
+    inset: 0;
+    transform-origin: 50% 53%;
+    animation: wobble 1.4s ease-in-out infinite;
     transition: --amp 0.4s, --sagx 0.4s, --sagy 0.4s;
   }
   @keyframes wobble {
@@ -193,23 +190,30 @@
     25% { transform: scale(calc(var(--sagx) * (1 + var(--amp))), calc(var(--sagy) * (1 - var(--amp)))); }
     75% { transform: scale(calc(var(--sagx) * (1 - var(--amp))), calc(var(--sagy) * (1 + var(--amp)))); }
   }
-  @media (prefers-reduced-motion: reduce) {
-    .yolk-wrap { animation: none; }
-  }
   .yolk-wrap svg { width: 100%; height: 100%; display: block; }
-  #yolk-stop-a { transition: stop-color 0.4s; }
-  #yolk-stop-b { transition: stop-color 0.4s; }
-  #yolk-shine { transition: opacity 0.4s; }
 
-  /* Gulans utseende per konsistens */
-  .egg[data-d='soft']   { --amp: 0.055; --sagx: 1.14; --sagy: 0.88; }
-  .egg[data-d='creamy'] { --amp: 0.032; --sagx: 1.07; --sagy: 0.94; }
-  .egg[data-d='firm']   { --amp: 0.012; --sagx: 1.02; --sagy: 0.98; }
+  /* Fyra realistiska gule-varianter — den aktiva tonas fram */
+  .yg { opacity: 0; transition: opacity 0.35s; }
+  .egg[data-d='soft'] .y-soft { opacity: 1; }
+  .egg[data-d='creamy'] .y-creamy { opacity: 1; }
+  .egg[data-d='firm'] .y-firm { opacity: 1; }
+  .egg[data-d='hard'] .y-hard { opacity: 1; }
+
+  /* Löskokt: gulan rinner sakta ut över vitan */
+  .spill { animation: ooze 2.8s ease-in-out infinite; }
+  @keyframes ooze {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .yolk-wrap, .spill { animation: none; }
+  }
+
+  /* Dallret: löskokt skakar mest, hårdkokt ligger still */
+  .egg[data-d='soft']   { --amp: 0.03;  --sagx: 1.06; --sagy: 0.96; }
+  .egg[data-d='creamy'] { --amp: 0.018; --sagx: 1.03; --sagy: 0.98; }
+  .egg[data-d='firm']   { --amp: 0.007; --sagx: 1.01; --sagy: 0.995; }
   .egg[data-d='hard']   { --amp: 0;     --sagx: 1;    --sagy: 1; }
-  .egg[data-d='soft']   { --yc-edge: #ffc25e; --yc-center: #f58a1f; --shine: 0.5; }
-  .egg[data-d='creamy'] { --yc-edge: #fccb6e; --yc-center: #f49b2e; --shine: 0.32; }
-  .egg[data-d='firm']   { --yc-edge: #fbd787; --yc-center: #f5b23f; --shine: 0.14; }
-  .egg[data-d='hard']   { --yc-edge: #f7e3ac; --yc-center: #f0c464; --shine: 0; }
 
   /* Segmenterad väljare */
   .seg {
@@ -445,16 +449,69 @@
             fill="url(#gw)" stroke="#eae3d8" stroke-width="3" />
         </svg>
         <div class="yolk-wrap">
-          <svg viewBox="0 0 124 124" aria-hidden="true">
+          <svg viewBox="0 0 200 240" aria-hidden="true">
             <defs>
-              <radialGradient id="gy" cx="42%" cy="38%" r="72%">
-                <stop id="yolk-stop-a" offset="0%" style="stop-color: var(--yc-edge)" />
-                <stop id="yolk-stop-b" offset="100%" style="stop-color: var(--yc-center)" />
+              <radialGradient id="gy-soft" cx="40%" cy="34%" r="75%">
+                <stop offset="0%" stop-color="#ffb648" />
+                <stop offset="70%" stop-color="#f68a14" />
+                <stop offset="100%" stop-color="#e87607" />
+              </radialGradient>
+              <linearGradient id="gy-spill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ef820e" />
+                <stop offset="100%" stop-color="#fca33c" />
+              </linearGradient>
+              <radialGradient id="gy-creamy" cx="42%" cy="36%" r="74%">
+                <stop offset="0%" stop-color="#fbc866" />
+                <stop offset="100%" stop-color="#f0932b" />
+              </radialGradient>
+              <radialGradient id="gy-core" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#e87d13" />
+                <stop offset="75%" stop-color="#ec8c20" />
+                <stop offset="100%" stop-color="#f0932b" />
+              </radialGradient>
+              <radialGradient id="gy-firm" cx="44%" cy="38%" r="72%">
+                <stop offset="0%" stop-color="#fbda8b" />
+                <stop offset="100%" stop-color="#f2ae40" />
+              </radialGradient>
+              <radialGradient id="gy-hard" cx="46%" cy="42%" r="70%">
+                <stop offset="0%" stop-color="#f6e4ab" />
+                <stop offset="100%" stop-color="#eec964" />
               </radialGradient>
             </defs>
-            <circle cx="62" cy="62" r="54" fill="url(#gy)" />
-            <ellipse id="yolk-shine" cx="48" cy="46" rx="14" ry="9" fill="#fff"
-              style="opacity: var(--shine)" transform="rotate(-24 48 46)" />
+
+            <!-- Löskokt: blank, flytande gula som runnit ut -->
+            <g class="yg y-soft">
+              <g class="spill">
+                <path d="M64 148 C57 182 68 204 86 209 C96 212 110 211 120 205 C135 197 142 174 136 148 Z" fill="url(#gy-spill)" />
+                <ellipse cx="112" cy="192" rx="10" ry="4.5" fill="#fff" opacity="0.26" transform="rotate(-14 112 192)" />
+              </g>
+              <circle cx="100" cy="126" r="48" fill="url(#gy-soft)" />
+              <ellipse cx="84" cy="106" rx="15" ry="9.5" fill="#fff" opacity="0.55" transform="rotate(-22 84 106)" />
+              <ellipse cx="116" cy="146" rx="7" ry="4" fill="#fff" opacity="0.22" transform="rotate(28 116 146)" />
+            </g>
+
+            <!-- Krämig: tjock gel med smält kärna -->
+            <g class="yg y-creamy">
+              <circle cx="100" cy="127" r="48" fill="url(#gy-creamy)" />
+              <circle cx="101" cy="133" r="27" fill="url(#gy-core)" />
+              <ellipse cx="85" cy="108" rx="13" ry="8" fill="#fff" opacity="0.32" transform="rotate(-22 85 108)" />
+            </g>
+
+            <!-- Fast: genomkokt men fuktig -->
+            <g class="yg y-firm">
+              <circle cx="100" cy="127" r="48" fill="url(#gy-firm)" />
+              <ellipse cx="86" cy="110" rx="12" ry="7" fill="#fff" opacity="0.14" transform="rotate(-22 86 110)" />
+            </g>
+
+            <!-- Hårdkokt: blek, matt, lite mjölig -->
+            <g class="yg y-hard">
+              <circle cx="100" cy="127" r="48" fill="url(#gy-hard)" />
+              <circle cx="86" cy="118" r="2.4" fill="#f9edc4" opacity="0.5" />
+              <circle cx="108" cy="104" r="1.9" fill="#f9edc4" opacity="0.45" />
+              <circle cx="115" cy="140" r="2.6" fill="#f9edc4" opacity="0.4" />
+              <circle cx="94" cy="150" r="2" fill="#f9edc4" opacity="0.45" />
+              <circle cx="76" cy="136" r="1.7" fill="#f9edc4" opacity="0.4" />
+            </g>
           </svg>
         </div>
       </div>
