@@ -10,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -75,6 +76,8 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [firstRun, setFirstRun] = useState(false);
   const loaded = useRef(false);
+  const { height: windowH } = useWindowDimensions();
+  const compact = windowH < 760;
 
   // Läs sparat läge + om introduktionen ska visas.
   useEffect(() => {
@@ -198,7 +201,10 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scroll, compact && styles.scrollCompact]}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
           <Text style={styles.wordmark}>ÄGGTIMERN</Text>
           <Pressable
@@ -211,7 +217,7 @@ export default function App() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(600)} style={styles.eggWrap}>
-          <EggVisual doneness={egg.doneness} grams={egg.grams} />
+          <EggVisual doneness={egg.doneness} grams={egg.grams} width={compact ? 98 : 152} />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(60).duration(600)} style={styles.section}>
@@ -255,7 +261,7 @@ export default function App() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(120).duration(600)} style={styles.section}>
+        <Animated.View entering={FadeInDown.delay(120).duration(600)} style={[styles.section, styles.divided]}>
           <Text style={font.label}>Konsistens</Text>
           <Segmented
             options={DONENESS}
@@ -267,7 +273,7 @@ export default function App() {
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.section}>
+        <Animated.View entering={FadeInDown.delay(180).duration(600)} style={[styles.section, styles.divided]}>
           <View style={styles.rowBetween}>
             <Text style={font.label}>Vikt</Text>
             <Text style={styles.value}>{egg.grams} g</Text>
@@ -280,7 +286,7 @@ export default function App() {
           <Slider min={40} max={90} step={1} value={egg.grams} onChange={(g) => updateEgg({ grams: g })} />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(240).duration(600)} style={styles.section}>
+        <Animated.View entering={FadeInDown.delay(240).duration(600)} style={[styles.section, styles.divided]}>
           <Text style={font.label}>Starttemperatur</Text>
           <Segmented
             options={START_TEMPS.map((t) => ({
@@ -293,16 +299,9 @@ export default function App() {
           />
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.section}>
+        <Animated.View entering={FadeInDown.delay(300).duration(600)} style={[styles.section, styles.divided]}>
           <View style={styles.rowBetween}>
             <Text style={font.label}>Höjd över havet</Text>
-            <Text style={styles.value}>{altitude} m</Text>
-          </View>
-          <Slider min={0} max={4500} step={50} value={altitude} onChange={setAltitude} />
-          <View style={styles.rowBetween}>
-            <Text style={font.caption}>
-              Vattnet kokar vid {waterC.toFixed(1).replace('.', ',')} °C
-            </Text>
             <Pressable style={styles.gpsButton} onPress={useGps} disabled={locating}>
               {locating ? (
                 <ActivityIndicator size="small" color={colors.yolkDeep} />
@@ -311,6 +310,10 @@ export default function App() {
               )}
             </Pressable>
           </View>
+          <Slider min={0} max={4500} step={50} value={altitude} onChange={setAltitude} />
+          <Text style={font.caption}>
+            {altitude} m över havet · vattnet kokar vid {waterC.toFixed(1).replace('.', ',')} °C
+          </Text>
           {locationError && <Text style={styles.error}>{locationError}</Text>}
         </Animated.View>
       </ScrollView>
@@ -385,6 +388,8 @@ const styles = StyleSheet.create({
   },
   eggWrap: { alignItems: 'center', marginVertical: -6 },
   section: { gap: 8 },
+  scrollCompact: { gap: 8, paddingBottom: 100 },
+  divided: { borderTopWidth: 1, borderTopColor: colors.line, paddingTop: 9 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   hint: { ...font.caption, textAlign: 'center' },
   value: { ...font.body, fontVariant: ['tabular-nums'], color: colors.inkSoft },
@@ -431,12 +436,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.yolk,
     borderRadius: radius.pill,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
     minWidth: 110,
     alignItems: 'center',
   },
-  gpsText: { fontSize: 13, fontWeight: '600', color: colors.yolkDeep },
+  gpsText: { fontSize: 12, fontWeight: '600', color: colors.yolkDeep },
   error: { ...font.caption, color: colors.danger },
   footer: {
     position: 'absolute',

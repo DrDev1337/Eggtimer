@@ -36,12 +36,11 @@ const WOBBLE: Record<DonenessKey, { amp: number; sagX: number; sagY: number }> =
   hard: { amp: 0, sagX: 1, sagY: 1 },
 };
 
-const W = 152;
-const H = 182;
-
 interface Props {
   doneness: DonenessKey;
   grams: number;
+  /** Ritbredd i punkter — höjden följer äggets proportioner. */
+  width?: number;
 }
 
 /**
@@ -49,7 +48,9 @@ interface Props {
  * löskokt med blank gula som runnit ut, krämig med smält kärna,
  * fast men fuktig, hårdkokt blek och matt.
  */
-export function EggVisual({ doneness, grams }: Props) {
+export function EggVisual({ doneness, grams, width = 152 }: Props) {
+  const W = width;
+  const H = Math.round(width * 1.2);
   // 40–90 g mappas till 86–108 % storlek.
   const sizeScale = 0.86 + ((grams - 40) / 50) * 0.22;
   const look = WOBBLE[doneness];
