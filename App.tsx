@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import * as Location from 'expo-location';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { EggVisual } from './src/components/EggVisual';
+import { InfoModal } from './src/components/InfoModal';
 import { Segmented } from './src/components/Segmented';
 import { Slider } from './src/components/Slider';
 import { TimerScreen } from './src/components/TimerScreen';
@@ -28,6 +30,8 @@ import {
 } from './src/physics/egg';
 import { colors, font, radius, space } from './src/theme';
 
+const INTRO_KEY = 'aggtimern-intro-seen';
+
 export default function App() {
   const [screen, setScreen] = useState<'setup' | 'timer'>('setup');
   const [doneness, setDoneness] = useState<DonenessKey>('creamy');
@@ -36,6 +40,25 @@ export default function App() {
   const [altitude, setAltitude] = useState(0);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [firstRun, setFirstRun] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(INTRO_KEY)
+      .then((seen) => {
+        if (!seen) {
+          setFirstRun(true);
+          setShowInfo(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const closeInfo = (dontRemind: boolean) => {
+    setShowInfo(false);
+    setFirstRun(false);
+    if (dontRemind) AsyncStorage.setItem(INTRO_KEY, '1').catch(() => {});
+  };
 
   const sizeKey = SIZES.find((s) => s.grams === grams)?.key;
   const selectedDoneness = DONENESS.find((d) => d.key === doneness)!;
@@ -94,8 +117,15 @@ export default function App() {
     <SafeAreaView style={styles.safe}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Animated.View entering={FadeIn.duration(600)}>
+        <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
           <Text style={styles.wordmark}>ÄGGTIMERN</Text>
+          <Pressable
+            style={styles.infoButton}
+            onPress={() => setShowInfo(true)}
+            accessibilityLabel="Visa instruktioner"
+          >
+            <Text style={styles.infoText}>i</Text>
+          </Pressable>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.duration(600)} style={styles.eggWrap}>
@@ -158,6 +188,8 @@ export default function App() {
         </Animated.View>
       </ScrollView>
 
+      <InfoModal visible={showInfo} firstRun={firstRun} onClose={closeInfo} />
+
       <Animated.View layout={LinearTransition} style={styles.footer}>
         {result.seconds === null ? (
           <Text style={styles.warning}>
@@ -194,11 +226,30 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   wordmark: {
     ...font.label,
     textAlign: 'center',
     color: colors.ink,
     letterSpacing: 4,
+  },
+  infoButton: {
+    position: 'absolute',
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.inkFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    color: colors.inkSoft,
+    fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
   eggWrap: { alignItems: 'center', marginVertical: -2 },
   section: { gap: 8 },
