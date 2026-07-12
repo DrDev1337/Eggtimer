@@ -1,6 +1,8 @@
 import * as Haptics from 'expo-haptics';
+import { useKeepAwake } from 'expo-keep-awake';
+import * as Notifications from 'expo-notifications';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -19,52 +21,127 @@ import { EGG_PATH } from './EggVisual';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-const SIZE = 300;
+const SIZE = 280;
 const STROKE = 5;
 const R = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * R;
 const SCENE = SIZE - 44;
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    // I förgrunden sköter appens eget larm ljud och vibration.
+    shouldShowBanner: false,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+
+export interface TimerEgg {
+  label: string;
+  seconds: number;
+}
+
+type EggState = 'cooking' | 'due' | 'up';
+
 interface Props {
-  totalSeconds: number;
-  summary: string;
+  /** Sorterade stigande efter koktid. */
+  eggs: TimerEgg[];
   waterC: number;
   onClose: () => void;
 }
 
-export function TimerScreen({ totalSeconds, summary, waterC, onClose }: Props) {
-  const [remaining, setRemaining] = useState(totalSeconds);
-  const [done, setDone] = useState(false);
-  const endAt = useRef(Date.now() + totalSeconds * 1000);
+export function TimerScreen({ eggs, waterC, onClose }: Props) {
+  useKeepAwake();
+  const total = eggs[eggs.length - 1].seconds;
+  const startAt = useRef(Date.now());
+  const [now, setNow] = useState(Date.now());
+  const [states, setStates] = useState<EggState[]>(eggs.map(() => 'cooking'));
+
+  const elapsed = (now - startAt.current) / 1000;
+  const done = states.every((s) => s === 'up');
+  const dueIndex = states.findIndex((s) => s === 'due');
+  const nextIndex = states.findIndex((s) => s === 'cooking');
+
+  // Lokala notiser plingar även om appen hamnar i bakgrunden.
+  useEffect(() => {
+    (async () => {
+      try {
+        await Notifications.requestPermissionsAsync();
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('alarm', {
+            name: 'Äggtimer',
+            importance: Notifications.AndroidImportance.MAX,
+            sound: 'default',
+            vibrationPattern: [0, 250, 250, 250],
+          });
+        }
+        for (const egg of eggs) {
+          await Notifications.scheduleNotificationAsync({
+            content: { title: 'Äggtimern', body: `Ta upp: ${egg.label}!`, sound: true },
+            trigger: {
+              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+              seconds: Math.max(1, egg.seconds),
+              channelId: Platform.OS === 'android' ? 'alarm' : undefined,
+            },
+          });
+        }
+      } catch {
+        // Utan notistillstånd gäller larmet i appen.
+      }
+    })();
+    return () => {
+      Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
+    };
+  }, [eggs]);
 
   const progress = useSharedValue(0);
   useEffect(() => {
-    progress.value = withTiming(1, {
-      duration: totalSeconds * 1000,
-      easing: Easing.linear,
-    });
-  }, [totalSeconds, progress]);
+    progress.value = withTiming(1, { duration: total * 1000, easing: Easing.linear });
+  }, [total, progress]);
 
   useEffect(() => {
     const id = setInterval(() => {
-      const left = Math.max(0, Math.ceil((endAt.current - Date.now()) / 1000));
-      setRemaining(left);
-      if (left <= 0) {
-        clearInterval(id);
-        setDone(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      }
-    }, 200);
+      const t = Date.now();
+      setNow(t);
+      const el = (t - startAt.current) / 1000;
+      setStates((prev) =>
+        prev.map((s, i) => (s === 'cooking' && el >= eggs[i].seconds ? 'due' : s))
+      );
+    }, 250);
     return () => clearInterval(id);
-  }, []);
+  }, [eggs]);
+
+  // Ihållande haptiskt larm så länge något ägg väntar på att tas upp.
+  const hasDue = dueIndex >= 0;
+  useEffect(() => {
+    if (!hasDue) return;
+    const buzz = () =>
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    buzz();
+    const id = setInterval(buzz, 1400);
+    return () => clearInterval(id);
+  }, [hasDue]);
 
   const ringProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
   }));
 
+  const acknowledge = () => {
+    setStates((prev) => {
+      const i = prev.findIndex((s) => s === 'due');
+      if (i < 0) return prev;
+      const nextStates = [...prev];
+      nextStates[i] = 'up';
+      return nextStates;
+    });
+  };
+
+  const multi = eggs.length > 1;
+
   return (
     <View style={styles.container}>
-      <Text style={font.label}>{done ? 'Färdigt' : 'Kokar'}</Text>
+      <Text style={font.label}>{done ? 'Färdigt' : hasDue ? 'Klart!' : 'Kokar'}</Text>
 
       <View style={styles.ringWrap}>
         <Svg
@@ -73,14 +150,7 @@ export function TimerScreen({ totalSeconds, summary, waterC, onClose }: Props) {
           viewBox={`0 0 ${SIZE} ${SIZE}`}
           style={{ transform: [{ rotate: '-90deg' }] }}
         >
-          <Circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={R}
-            stroke={colors.line}
-            strokeWidth={STROKE}
-            fill="none"
-          />
+          <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} stroke={colors.line} strokeWidth={STROKE} fill="none" />
           <AnimatedCircle
             cx={SIZE / 2}
             cy={SIZE / 2}
@@ -100,29 +170,64 @@ export function TimerScreen({ totalSeconds, summary, waterC, onClose }: Props) {
         <>
           <Text style={styles.time}>Klart!</Text>
           <Text style={styles.summary}>
-            Spola ägget under kallt vatten så stannar tillagningen.
+            {multi
+              ? 'Alla ägg upptagna. Spola dem under kallt vatten så stannar tillagningen.'
+              : 'Spola ägget under kallt vatten så stannar tillagningen.'}
           </Text>
+        </>
+      ) : hasDue ? (
+        <>
+          <Text style={styles.dueTime}>Ta upp!</Text>
+          <Text style={styles.instruction}>{eggs[dueIndex].label} är färdigt</Text>
+          <Text style={styles.summary}>Ta upp det och spola kallt.</Text>
         </>
       ) : (
         <>
-          <Text style={styles.time}>{formatTime(remaining)}</Text>
-          <Text style={styles.instruction}>Lägg ägget i det kokande vattnet nu.</Text>
+          <Text style={styles.time}>
+            {formatTime(Math.max(0, Math.ceil(eggs[nextIndex]?.seconds - elapsed || 0)))}
+          </Text>
+          <Text style={styles.instruction}>
+            {multi ? `Näst upp: ${eggs[nextIndex]?.label}` : 'Lägg ägget i det kokande vattnet nu.'}
+          </Text>
           <Text style={styles.summary}>
-            {summary} · vattnet kokar vid {waterC.toFixed(1).replace('.', ',')} °C
+            {multi ? 'Lägg ner alla äggen samtidigt · ' : ''}vattnet kokar vid{' '}
+            {waterC.toFixed(1).replace('.', ',')} °C
           </Text>
         </>
+      )}
+
+      {multi && !done && (
+        <View style={styles.rows}>
+          {eggs.map((egg, i) => {
+            const left = Math.max(0, Math.ceil(egg.seconds - elapsed));
+            const s = states[i];
+            return (
+              <View key={i} style={[styles.rowItem, s === 'due' && styles.rowDue, s === 'up' && styles.rowUp]}>
+                <Text style={styles.rowLabel}>{egg.label}</Text>
+                <Text style={[styles.rowTime, s === 'due' && styles.rowTimeDue]}>
+                  {s === 'up' ? '✓' : s === 'due' ? 'Ta upp!' : formatTime(left)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
       )}
 
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          done ? styles.buttonPrimary : styles.buttonGhost,
-          pressed && { opacity: 0.7 },
+          done ? styles.buttonPrimary : hasDue ? styles.buttonDue : styles.buttonGhost,
+          pressed && { opacity: 0.75 },
         ]}
-        onPress={onClose}
+        onPress={hasDue ? acknowledge : onClose}
       >
-        <Text style={[styles.buttonText, done ? styles.buttonTextPrimary : styles.buttonTextGhost]}>
-          {done ? 'Nytt ägg' : 'Avbryt'}
+        <Text
+          style={[
+            styles.buttonText,
+            done || hasDue ? styles.buttonTextPrimary : styles.buttonTextGhost,
+          ]}
+        >
+          {done ? 'Nya ägg' : hasDue ? 'Upptaget ✓' : 'Avbryt'}
         </Text>
       </Pressable>
     </View>
@@ -152,7 +257,7 @@ function BoilingScene() {
   return (
     <View style={styles.pot}>
       <Animated.View style={[styles.floatingEgg, eggStyle]}>
-        <Svg width={86} height={104} viewBox="0 0 200 240">
+        <Svg width={80} height={96} viewBox="0 0 200 240">
           <Defs>
             <RadialGradient id="shell" cx="40%" cy="32%" r="80%">
               <Stop offset="0%" stopColor="#FFFEFB" />
@@ -162,8 +267,8 @@ function BoilingScene() {
           <Path d={EGG_PATH} fill="url(#shell)" />
         </Svg>
       </Animated.View>
-      <Wave offset={0} duration={5200} opacity={1} height={92} color={colors.water} />
-      <Wave offset={160} duration={3600} opacity={0.75} height={78} color={colors.waterDeep} />
+      <Wave offset={0} duration={5200} opacity={1} height={86} color={colors.water} />
+      <Wave offset={160} duration={3600} opacity={0.75} height={72} color={colors.waterDeep} />
       {BUBBLES.map((b, i) => (
         <Bubble key={i} {...b} />
       ))}
@@ -228,7 +333,7 @@ function Bubble({ x, size, duration, delay }: (typeof BUBBLES)[number]) {
   }, [t, duration, delay]);
 
   const style = useAnimatedStyle(() => ({
-    transform: [{ translateY: -t.value * 62 }],
+    transform: [{ translateY: -t.value * 58 }],
     opacity: 0.9 - t.value * 0.9,
   }));
 
@@ -261,7 +366,7 @@ function DoneBadge() {
     <View style={styles.doneWrap}>
       <Animated.View style={[styles.halo, haloStyle]} />
       <Animated.View style={[styles.badge, badge]}>
-        <Svg width={64} height={64} viewBox="0 0 64 64">
+        <Svg width={60} height={60} viewBox="0 0 64 64">
           <Path
             d="M16 33 L27 44 L48 22"
             stroke={colors.white}
@@ -283,7 +388,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.bg,
     padding: space.l,
-    gap: space.m,
+    gap: space.s + 2,
   },
   ringWrap: {
     width: SIZE,
@@ -304,7 +409,7 @@ const styles = StyleSheet.create({
   floatingEgg: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: 52,
+    bottom: 48,
     zIndex: 1,
   },
   wave: { position: 'absolute', bottom: 0, left: 0, width: SCENE * 2 + 240 },
@@ -316,29 +421,59 @@ const styles = StyleSheet.create({
   doneWrap: { alignItems: 'center', justifyContent: 'center' },
   halo: {
     position: 'absolute',
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: colors.yolk,
   },
   badge: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: colors.yolk,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  time: { ...font.timer, marginTop: space.s },
+  time: { ...font.timer, fontSize: 60, marginTop: space.xs },
+  dueTime: {
+    fontSize: 44,
+    fontWeight: '600',
+    letterSpacing: -1,
+    color: colors.yolkDeep,
+    marginTop: space.xs,
+  },
   instruction: { ...font.body, fontWeight: '600', textAlign: 'center' },
-  summary: { ...font.caption, textAlign: 'center', maxWidth: 280, marginTop: -space.s },
+  summary: { ...font.caption, textAlign: 'center', maxWidth: 300, marginTop: -space.xs },
+  rows: { width: '100%', maxWidth: 320, gap: 6 },
+  rowItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+  },
+  rowDue: { borderWidth: 2, borderColor: colors.yolk },
+  rowUp: { opacity: 0.55 },
+  rowLabel: { fontSize: 14, color: colors.ink },
+  rowTime: { fontSize: 14, color: colors.inkSoft, fontVariant: ['tabular-nums'], fontWeight: '500' },
+  rowTimeDue: { color: colors.yolkDeep, fontWeight: '700' },
   button: {
-    marginTop: space.m,
-    paddingVertical: 16,
-    paddingHorizontal: 48,
+    marginTop: space.s,
+    paddingVertical: 14,
+    paddingHorizontal: 44,
     borderRadius: radius.pill,
   },
   buttonPrimary: { backgroundColor: colors.ink },
+  buttonDue: {
+    backgroundColor: colors.yolk,
+    shadowColor: colors.yolkDeep,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
   buttonGhost: { borderWidth: 1, borderColor: colors.inkFaint },
   buttonText: { fontSize: 16, fontWeight: '600' },
   buttonTextPrimary: { color: colors.white },

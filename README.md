@@ -15,12 +15,19 @@ höjden över havet. Ägget förutsätts läggas i redan kokande vatten.
 - **Starttemperatur** — kylskåpskallt (4 °C) eller rumsvarmt (20 °C).
 - **Konsistens** — löskokt, krämig, fast eller hårdkokt, med levande förhandsvisning av
   gulan i äggets tvärsnitt.
-- **Höjd över havet** — reglage eller hämtning via GPS. Appen räknar ut vattnets faktiska
-  kokpunkt och förlänger koktiden. Blir önskad konsistens fysikaliskt omöjlig (gulan kan
-  aldrig bli varmare än vattnet) varnar appen.
-- **Timer** — animerad förloppsring, ägg som guppar i sjudande vatten, haptisk signal och
-  tydligt klart-läge. Nedräkningen utgår från klockslag, så den drabbas inte av drift om
-  appen hamnar i bakgrunden.
+- **Höjd över havet** — reglage eller via position: appen slår upp exakt markhöjd i
+  Open-Meteos höjddatabas (stabilare än rå GPS-höjd). Vattnets faktiska kokpunkt räknas
+  ut och förlänger koktiden. Blir önskad konsistens fysikaliskt omöjlig (gulan kan aldrig
+  bli varmare än vattnet) varnar appen.
+- **Flera ägg samtidigt** — lägg alla ägg i kastrullen på en gång; appen larmar när varje
+  ägg ska tas upp, i tur och ordning.
+- **Larm som inte ger sig** — ihållande ljud- och vibrationslarm tills ägget kvitteras som
+  upptaget. Mobilappen skickar lokala notiser även i bakgrunden; webbversionen håller
+  skärmen vaken med Wake Lock.
+- **Minns dina val** — vikt, konsistens, temperatur och höjd sparas mellan starter.
+- **Timer** — animerad förloppsring, ägg som guppar i sjudande vatten och tydligt
+  klart-läge. Nedräkningen utgår från klockslag, så den drabbas inte av drift om appen
+  hamnar i bakgrunden.
 
 ## Fysiken
 
@@ -62,6 +69,12 @@ Hela modellen ligger i [`src/physics/egg.ts`](src/physics/egg.ts) med enhetstest
 - [Boiling Point at Altitude — Omni Calculator](https://www.omnicalculator.com/chemistry/boiling-point-altitude)
 - [High Altitude Cooking — USDA FSIS](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/high-altitude-cooking)
 - [High Elevation Hard-Cooked Eggs — Colorado State University Extension](https://extension.colostate.edu/resource/high-altitude-hard-cooked-eggs/)
+
+## Testa direkt
+
+Webbversionen är en installerbar PWA: **https://drdev1337.github.io/Eggtimer/** —
+öppna på mobilen och välj "Lägg till på hemskärmen" så beter den sig som en app,
+med egen ikon och offline-stöd. Källan ligger i [`web/`](web/).
 
 ## Kom igång
 
