@@ -1,6 +1,12 @@
 <title>Äggtimern</title>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f7f3ec" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Äggtimern" />
 <style>
   /* Äggtimern — samma palett och fysik som mobilappen, i ren HTML/CSS/JS. */
   @property --amp { syntax: '<number>'; initial-value: 0; inherits: true; }
@@ -39,7 +45,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: clamp(10px, 1.8dvh, 20px);
+    gap: clamp(8px, 1.5dvh, 18px);
     padding: clamp(10px, 1.6dvh, 18px) 20px 116px;
     max-width: 560px;
     width: 100%;
@@ -81,81 +87,6 @@
   .info-btn:active { background: var(--line); }
   .info-btn:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; }
 
-  /* Instruktionsmodal */
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(33, 29, 25, 0.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    z-index: 10;
-  }
-  .backdrop.open { display: flex; animation: fadein 0.25s ease-out; }
-  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
-  .modal {
-    background: var(--bg);
-    border-radius: 24px;
-    padding: 26px 24px 22px;
-    max-width: 360px;
-    width: 100%;
-    max-height: 86dvh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    box-shadow: 0 20px 50px rgba(33, 29, 25, 0.3);
-    animation: modalin 0.35s cubic-bezier(0.34, 1.3, 0.5, 1);
-  }
-  @keyframes modalin { from { transform: scale(0.92) translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) {
-    .backdrop.open, .modal { animation: none; }
-  }
-  .modal h2 { font-size: 19px; font-weight: 700; letter-spacing: 0.2px; }
-  .steps { display: flex; flex-direction: column; gap: 13px; }
-  .step { display: flex; gap: 12px; align-items: flex-start; }
-  .step-n {
-    flex: none;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: var(--yolk);
-    color: var(--white);
-    font-size: 13px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 1px;
-  }
-  .step p { font-size: 14px; line-height: 1.5; color: var(--ink); }
-  .step p b { font-weight: 650; }
-  .modal .fine { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
-  .remember {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    font-size: 13px;
-    color: var(--ink-soft);
-    cursor: pointer;
-    user-select: none;
-  }
-  .remember input { width: 17px; height: 17px; accent-color: var(--yolk); cursor: pointer; }
-  .modal-close {
-    border: 0;
-    background: var(--ink);
-    color: var(--white);
-    font: inherit;
-    font-size: 15px;
-    font-weight: 600;
-    padding: 13px;
-    border-radius: 999px;
-    cursor: pointer;
-  }
-  .modal-close:active { opacity: 0.85; }
-  .modal-close:focus-visible { outline: 3px solid var(--yolk); }
-
   .label {
     font-size: 11px;
     font-weight: 600;
@@ -169,15 +100,60 @@
   .value { font-size: 15px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
   .hint { font-size: 13px; color: var(--ink-soft); text-align: center; }
 
+  /* Äggväljaren — flera ägg i samma kastrull */
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1.5px solid var(--line);
+    background: var(--line);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .chip.on {
+    background: var(--card);
+    border-color: var(--card);
+    color: var(--ink);
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(33, 29, 25, 0.1);
+  }
+  .chip .x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--line);
+    color: var(--ink-soft);
+    font-size: 11px;
+    line-height: 1;
+  }
+  .chip.on .x { background: var(--bg); }
+  .chip.add {
+    background: none;
+    border-style: dashed;
+    border-color: var(--ink-faint);
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .chip:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; }
+
   /* Ägget */
   .egg-stage { display: flex; justify-content: center; }
   .egg {
     position: relative;
-    width: clamp(118px, 22dvh, 168px);
+    width: clamp(110px, 20dvh, 160px);
     aspect-ratio: 200 / 240;
     transition: width 0.35s cubic-bezier(0.34, 1.4, 0.5, 1);
   }
-  .egg svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .egg > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .yolk-wrap {
     position: absolute;
     inset: 0;
@@ -192,14 +168,12 @@
   }
   .yolk-wrap svg { width: 100%; height: 100%; display: block; }
 
-  /* Fyra realistiska gule-varianter — den aktiva tonas fram */
   .yg { opacity: 0; transition: opacity 0.35s; }
   .egg[data-d='soft'] .y-soft { opacity: 1; }
   .egg[data-d='creamy'] .y-creamy { opacity: 1; }
   .egg[data-d='firm'] .y-firm { opacity: 1; }
   .egg[data-d='hard'] .y-hard { opacity: 1; }
 
-  /* Löskokt: gulan rinner sakta ut över vitan */
   .spill { animation: ooze 2.8s ease-in-out infinite; }
   @keyframes ooze {
     0%, 100% { transform: translateY(0); }
@@ -209,7 +183,6 @@
     .yolk-wrap, .spill { animation: none; }
   }
 
-  /* Dallret: löskokt skakar mest, hårdkokt ligger still */
   .egg[data-d='soft']   { --amp: 0.03;  --sagx: 1.06; --sagy: 0.96; }
   .egg[data-d='creamy'] { --amp: 0.018; --sagx: 1.03; --sagy: 0.98; }
   .egg[data-d='firm']   { --amp: 0.007; --sagx: 1.01; --sagy: 0.995; }
@@ -312,12 +285,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
     background: var(--card);
     border-radius: 28px 28px 0 0;
     box-shadow: 0 -4px 16px rgba(33, 29, 25, 0.08);
   }
   .footer time { font-size: 34px; font-weight: 200; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .multi-note { font-size: 12px; color: var(--ink-soft); }
   .start-btn {
     border: 0;
     background: var(--yolk);
@@ -335,8 +309,8 @@
   .warning { font-size: 13px; color: var(--danger); }
 
   /* ---------- Timer ---------- */
-  #timer { align-items: center; justify-content: center; gap: 18px; padding: 28px; text-align: center; }
-  .ring-wrap { position: relative; width: min(300px, 72vw, 40dvh); aspect-ratio: 1; }
+  #timer { align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+  .ring-wrap { position: relative; width: min(280px, 68vw, 36dvh); aspect-ratio: 1; }
   .ring-wrap > svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .ring-track { fill: none; stroke: var(--line); stroke-width: 5; }
   .ring-fill { fill: none; stroke: var(--yolk); stroke-width: 5; stroke-linecap: round; }
@@ -409,10 +383,31 @@
   #timer.done .pot { display: none; }
   #timer.done .badge { display: flex; }
 
-  .big-time { font-size: 68px; font-weight: 200; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
-  .timer-sub { font-size: 13px; color: var(--ink-soft); max-width: 300px; line-height: 1.5; }
+  .big-time { font-size: 60px; font-weight: 200; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+  #timer.due .big-time { color: var(--yolk-deep); font-weight: 500; font-size: 44px; animation: duepulse 1s ease-in-out infinite; }
+  @keyframes duepulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  .timer-sub { font-size: 13px; color: var(--ink-soft); max-width: 320px; line-height: 1.5; }
   .timer-sub strong { color: var(--ink); font-weight: 600; }
   .timer-label { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); }
+
+  /* Ägglista på timerskärmen */
+  .egg-rows { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px; }
+  .egg-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--card);
+    border-radius: 14px;
+    padding: 9px 14px;
+    font-size: 14px;
+  }
+  .egg-row .t { font-variant-numeric: tabular-nums; color: var(--ink-soft); font-weight: 500; }
+  .egg-row.due { outline: 2px solid var(--yolk); }
+  .egg-row.due .t { color: var(--yolk-deep); font-weight: 700; }
+  .egg-row.up { opacity: 0.55; }
+  .egg-row.up .t { color: var(--ink-soft); }
+
   .cancel-btn {
     border: 1px solid var(--ink-faint);
     background: none;
@@ -420,12 +415,88 @@
     font: inherit;
     font-size: 16px;
     font-weight: 600;
-    padding: 14px 44px;
+    padding: 13px 40px;
     border-radius: 999px;
     cursor: pointer;
   }
   .cancel-btn.primary { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .cancel-btn.due { background: var(--yolk); color: var(--white); border-color: var(--yolk); box-shadow: 0 4px 14px rgba(224, 122, 47, 0.45); }
   .cancel-btn:focus-visible { outline: 3px solid var(--yolk); }
+
+  /* Instruktionsmodal */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(33, 29, 25, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 10;
+  }
+  .backdrop.open { display: flex; animation: fadein 0.25s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: var(--bg);
+    border-radius: 24px;
+    padding: 26px 24px 22px;
+    max-width: 360px;
+    width: 100%;
+    max-height: 86dvh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 20px 50px rgba(33, 29, 25, 0.3);
+    animation: modalin 0.35s cubic-bezier(0.34, 1.3, 0.5, 1);
+  }
+  @keyframes modalin { from { transform: scale(0.92) translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .backdrop.open, .modal { animation: none; }
+  }
+  .modal h2 { font-size: 19px; font-weight: 700; letter-spacing: 0.2px; }
+  .steps { display: flex; flex-direction: column; gap: 13px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; }
+  .step-n {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--yolk);
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .step p { font-size: 14px; line-height: 1.5; color: var(--ink); }
+  .step p b { font-weight: 650; }
+  .modal .fine { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
+  .remember {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    user-select: none;
+  }
+  .remember input { width: 17px; height: 17px; accent-color: var(--yolk); cursor: pointer; }
+  .modal-close {
+    border: 0;
+    background: var(--ink);
+    color: var(--white);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 13px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .modal-close:active { opacity: 0.85; }
+  .modal-close:focus-visible { outline: 3px solid var(--yolk); }
 </style>
 
 <!-- ================= INSTÄLLNINGAR ================= -->
@@ -479,7 +550,6 @@
               </radialGradient>
             </defs>
 
-            <!-- Löskokt: blank, flytande gula som runnit ut -->
             <g class="yg y-soft">
               <g class="spill">
                 <path d="M64 148 C57 182 68 204 86 209 C96 212 110 211 120 205 C135 197 142 174 136 148 Z" fill="url(#gy-spill)" />
@@ -490,20 +560,17 @@
               <ellipse cx="116" cy="146" rx="7" ry="4" fill="#fff" opacity="0.22" transform="rotate(28 116 146)" />
             </g>
 
-            <!-- Krämig: tjock gel med smält kärna -->
             <g class="yg y-creamy">
               <circle cx="100" cy="127" r="48" fill="url(#gy-creamy)" />
               <circle cx="101" cy="133" r="27" fill="url(#gy-core)" />
               <ellipse cx="85" cy="108" rx="13" ry="8" fill="#fff" opacity="0.32" transform="rotate(-22 85 108)" />
             </g>
 
-            <!-- Fast: genomkokt men fuktig -->
             <g class="yg y-firm">
               <circle cx="100" cy="127" r="48" fill="url(#gy-firm)" />
               <ellipse cx="86" cy="110" rx="12" ry="7" fill="#fff" opacity="0.14" transform="rotate(-22 86 110)" />
             </g>
 
-            <!-- Hårdkokt: blek, matt, lite mjölig -->
             <g class="yg y-hard">
               <circle cx="100" cy="127" r="48" fill="url(#gy-hard)" />
               <circle cx="86" cy="118" r="2.4" fill="#f9edc4" opacity="0.5" />
@@ -515,6 +582,13 @@
           </svg>
         </div>
       </div>
+    </div>
+
+    <div class="section">
+      <div class="row">
+        <div class="label">Ägg i kastrullen</div>
+      </div>
+      <div class="chips" id="egg-chips"></div>
     </div>
 
     <div class="section">
@@ -561,6 +635,7 @@
     <div id="footer-ok">
       <div class="label">Koktid i kokande vatten</div>
       <time id="time-out">5:22</time>
+      <div class="multi-note" id="multi-note" hidden></div>
     </div>
     <div class="warning" id="footer-warn" hidden></div>
     <button class="start-btn" id="start">Starta</button>
@@ -602,6 +677,7 @@
   </div>
   <div class="big-time" id="big-time">0:00</div>
   <div class="timer-sub" id="timer-sub"></div>
+  <div class="egg-rows" id="egg-rows" hidden></div>
   <button class="cancel-btn" id="cancel">Avbryt</button>
 </div>
 
@@ -612,7 +688,7 @@
     <div class="steps">
       <div class="step">
         <div class="step-n">1</div>
-        <p><b>Ställ in ditt ägg</b> — vikt, kylskåpskallt eller rumsvarmt, önskad konsistens och din höjd över havet.</p>
+        <p><b>Ställ in dina ägg</b> — vikt, kylskåpskallt eller rumsvarmt, önskad konsistens och din höjd över havet. Lägg till fler ägg med <b>+</b> om ni är flera.</p>
       </div>
       <div class="step">
         <div class="step-n">2</div>
@@ -620,14 +696,14 @@
       </div>
       <div class="step">
         <div class="step-n">3</div>
-        <p><b>Tryck Starta och lägg ner ägget</b> försiktigt i vattnet, direkt. Använd gärna en sked.</p>
+        <p><b>Tryck Starta och lägg ner alla ägg samtidigt</b>, försiktigt. Använd gärna en sked.</p>
       </div>
       <div class="step">
         <div class="step-n">4</div>
-        <p><b>När timern ringer:</b> spola ägget under kallt vatten så stannar tillagningen.</p>
+        <p><b>Larmet ringer när varje ägg är klart</b> — ta upp det och spola det under kallt vatten så stannar tillagningen.</p>
       </div>
     </div>
-    <p class="fine">Tiden räknas ut med Williams formel från University of Exeter — därför frågar appen om vikt, temperatur och höjd över havet.</p>
+    <p class="fine">Tiden räknas ut med Williams formel från University of Exeter — därför frågar appen om vikt, temperatur och höjd över havet. Håll appen öppen medan äggen kokar, så hålls skärmen vaken.</p>
     <label class="remember" id="remember-row">
       <input type="checkbox" id="dont-remind" checked />
       Påminn mig inte igen
@@ -673,9 +749,31 @@
     { key: 'fridge', label: 'Kylskåpskallt', sub: '4 °C', c: 4 },
     { key: 'room', label: 'Rumsvarmt', sub: '20 °C', c: 20 },
   ];
+  const MAX_EGGS = 6;
 
-  const state = { doneness: 'creamy', grams: 58, temp: 'fridge', alt: 0 };
+  /* ===== Tillstånd, med minne mellan besök ===== */
+  const STATE_KEY = 'aggtimern-state';
+  const state = { eggs: [{ doneness: 'creamy', grams: 58, temp: 'fridge' }], active: 0, alt: 0 };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STATE_KEY));
+    if (saved && Array.isArray(saved.eggs) && saved.eggs.length) {
+      state.eggs = saved.eggs
+        .slice(0, MAX_EGGS)
+        .filter((e) => DONENESS.some((d) => d.key === e.doneness) && TEMPS.some((t) => t.key === e.temp))
+        .map((e) => ({ doneness: e.doneness, grams: Math.min(90, Math.max(40, +e.grams || 58)), temp: e.temp }));
+      if (!state.eggs.length) state.eggs = [{ doneness: 'creamy', grams: 58, temp: 'fridge' }];
+      state.active = Math.min(state.eggs.length - 1, Math.max(0, +saved.active || 0));
+      state.alt = Math.min(4500, Math.max(0, +saved.alt || 0));
+    }
+  } catch (e) { /* trasig eller avstängd lagring — kör standard */ }
+  function persist() {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch (e) { /* ok */ }
+  }
+
   const $ = (id) => document.getElementById(id);
+  const activeEgg = () => state.eggs[state.active];
+  const sizeLabel = (g) => SIZES.find((s) => s.grams === g)?.label ?? `${g} g`;
+  const eggName = (e) => `${DONENESS.find((d) => d.key === e.doneness).label} ${sizeLabel(e.grams)}`;
 
   /* Segmenterad väljare med glidande indikator */
   function buildSeg(el, options, getActive, onPick) {
@@ -700,30 +798,84 @@
   }
 
   const upd = [
-    buildSeg($('seg-doneness'), DONENESS, () => state.doneness, (o) => (state.doneness = o.key)),
-    buildSeg($('seg-size'), SIZES, () => SIZES.find((s) => s.grams === state.grams)?.key, (o) => {
-      state.grams = o.grams;
+    buildSeg($('seg-doneness'), DONENESS, () => activeEgg().doneness, (o) => (activeEgg().doneness = o.key)),
+    buildSeg($('seg-size'), SIZES, () => SIZES.find((s) => s.grams === activeEgg().grams)?.key, (o) => {
+      activeEgg().grams = o.grams;
       $('grams').value = o.grams;
     }),
-    buildSeg($('seg-temp'), TEMPS, () => state.temp, (o) => (state.temp = o.key)),
+    buildSeg($('seg-temp'), TEMPS, () => activeEgg().temp, (o) => (activeEgg().temp = o.key)),
   ];
+
+  /* Äggchippen */
+  function renderChips() {
+    const el = $('egg-chips');
+    el.innerHTML = '';
+    state.eggs.forEach((e, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip' + (i === state.active ? ' on' : '');
+      b.append(document.createTextNode(eggName(e)));
+      if (state.eggs.length > 1) {
+        const x = document.createElement('span');
+        x.className = 'x';
+        x.textContent = '×';
+        x.setAttribute('aria-label', 'Ta bort ägget');
+        x.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          state.eggs.splice(i, 1);
+          state.active = Math.min(state.active, state.eggs.length - 1);
+          render();
+        });
+        b.appendChild(x);
+      }
+      b.addEventListener('click', () => { state.active = i; render(); });
+      el.appendChild(b);
+    });
+    if (state.eggs.length < MAX_EGGS) {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'chip add';
+      add.textContent = '+ Lägg till ägg';
+      add.addEventListener('click', () => {
+        state.eggs.push({ ...activeEgg() });
+        state.active = state.eggs.length - 1;
+        render();
+      });
+      el.appendChild(add);
+    }
+  }
 
   function sliderFill(input) {
     const pct = ((input.value - input.min) / (input.max - input.min)) * 100;
     input.style.setProperty('--fill', pct + '%');
   }
-  $('grams').addEventListener('input', (e) => { state.grams = +e.target.value; render(); });
+  $('grams').addEventListener('input', (e) => { activeEgg().grams = +e.target.value; render(); });
   $('alt').addEventListener('input', (e) => { state.alt = +e.target.value; render(); });
 
+  /* ===== Höjd: position → exakt markhöjd via Open-Meteos höjddatabas ===== */
+  async function elevationFromCoords(lat, lon) {
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`, { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) throw new Error('http ' + r.status);
+    const j = await r.json();
+    const e = Array.isArray(j.elevation) ? j.elevation[0] : null;
+    if (typeof e !== 'number') throw new Error('no elevation');
+    return e;
+  }
   $('gps').addEventListener('click', () => {
     $('gps-err').hidden = true;
     if (!navigator.geolocation) return showGpsErr('Ingen platstjänst i den här webbläsaren — dra i reglaget i stället.');
     $('gps-label').textContent = 'Hämtar…';
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
+        let alt = null;
+        try {
+          alt = await elevationFromCoords(pos.coords.latitude, pos.coords.longitude);
+        } catch (e) {
+          alt = pos.coords.altitude; // reservplan: GPS-höjden rakt av
+        }
         $('gps-label').textContent = 'Använd min position';
-        if (pos.coords.altitude == null) return showGpsErr('Ingen höjddata från GPS:en — dra i reglaget i stället.');
-        state.alt = Math.min(4500, Math.max(0, Math.round(pos.coords.altitude / 10) * 10));
+        if (alt == null) return showGpsErr('Ingen höjddata gick att hämta — dra i reglaget i stället.');
+        state.alt = Math.min(4500, Math.max(0, Math.round(alt / 5) * 5));
         $('alt').value = state.alt;
         render();
       },
@@ -733,28 +885,44 @@
   });
   function showGpsErr(msg) { const e = $('gps-err'); e.textContent = msg; e.hidden = false; }
 
-  function calc() {
-    const d = DONENESS.find((x) => x.key === state.doneness);
-    const t = TEMPS.find((x) => x.key === state.temp);
-    return { d, t, ...cookSeconds(state.grams, t.c, d.yolkC, state.alt) };
+  function calcAll() {
+    return state.eggs.map((e) => {
+      const d = DONENESS.find((x) => x.key === e.doneness);
+      const t = TEMPS.find((x) => x.key === e.temp);
+      return { egg: e, d, t, ...cookSeconds(e.grams, t.c, d.yolkC, state.alt) };
+    });
   }
 
   function render() {
-    const { d, seconds, waterC } = calc();
-    $('egg').dataset.d = state.doneness;
-    $('doneness-hint').textContent = `${d.desc} · ${d.yolkC} °C i gulans mitt`;
-    $('grams-out').textContent = state.grams;
+    const all = calcAll();
+    const act = all[state.active];
+    $('egg').dataset.d = act.egg.doneness;
+    $('doneness-hint').textContent = `${act.d.desc} · ${act.d.yolkC} °C i gulans mitt`;
+    $('grams-out').textContent = act.egg.grams;
+    $('grams').value = act.egg.grams;
     $('alt-out').textContent = state.alt;
-    $('boil-out').textContent = `Vattnet kokar vid ${sv(waterC)} °C`;
+    $('alt').value = state.alt;
+    $('boil-out').textContent = `Vattnet kokar vid ${sv(act.waterC)} °C`;
     sliderFill($('grams'));
     sliderFill($('alt'));
-    const ok = seconds !== null;
+    renderChips();
+
+    const broken = all.find((r) => r.seconds === null);
+    const ok = !broken;
     $('footer-ok').style.display = ok ? '' : 'none';
     $('start').style.display = ok ? '' : 'none';
     $('footer-warn').hidden = ok;
-    if (ok) $('time-out').textContent = fmt(seconds);
-    else $('footer-warn').textContent = `På ${state.alt} m kokar vattnet vid ${sv(waterC, 0)} °C — gulan kan aldrig nå ${d.yolkC} °C. Välj en lösare konsistens.`;
+    if (ok) {
+      const times = all.map((r) => r.seconds).sort((a, b) => a - b);
+      $('time-out').textContent = fmt(times[times.length - 1]);
+      const multi = state.eggs.length > 1;
+      $('multi-note').hidden = !multi;
+      if (multi) $('multi-note').textContent = `${state.eggs.length} ägg · första klart ${fmt(times[0])}`;
+    } else {
+      $('footer-warn').textContent = `${eggName(broken.egg)}: på ${state.alt} m kokar vattnet vid ${sv(broken.waterC, 0)} °C — gulan kan aldrig nå ${broken.d.yolkC} °C. Välj en lösare konsistens.`;
+    }
     upd.forEach((u) => u());
+    persist();
   }
 
   /* Vågor i grytan */
@@ -767,59 +935,168 @@
   wave($('wave-a'), '#ddedf2');
   wave($('wave-b'), '#b8d8e3');
 
-  /* ===== Timern ===== */
+  /* ===== Larm som inte ger sig ===== */
+  let audioCtx = null, alarmInterval = null;
+  function primeAudio() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) { /* ljud är inte kritiskt */ }
+  }
+  function chime() {
+    if (audioCtx) {
+      try {
+        [0, 0.18, 0.36].forEach((t0, i) => {
+          const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.connect(g); g.connect(audioCtx.destination);
+          o.frequency.value = [880, 1100, 1320][i];
+          g.gain.setValueAtTime(0.001, audioCtx.currentTime + t0);
+          g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + t0 + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + t0 + 0.18);
+          o.start(audioCtx.currentTime + t0); o.stop(audioCtx.currentTime + t0 + 0.2);
+        });
+      } catch (e) { /* ok */ }
+    }
+    if (navigator.vibrate) navigator.vibrate([220, 110, 220]);
+  }
+  function startAlarm(label) {
+    if (!alarmInterval) {
+      chime();
+      alarmInterval = setInterval(chime, 1400);
+    }
+    if (document.hidden && 'Notification' in window && Notification.permission === 'granted' && swReg) {
+      swReg.showNotification('Äggtimern', { body: `Ta upp: ${label}!`, icon: 'icon-192.png', tag: 'aggtimern' }).catch(() => {});
+    }
+  }
+  function stopAlarm() {
+    if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+    if (navigator.vibrate) navigator.vibrate(0);
+  }
+
+  /* Håll skärmen vaken medan äggen kokar */
+  let wakeLock = null;
+  async function requestWakeLock() {
+    try { wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { /* stöds inte överallt */ }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (run && !document.hidden) requestWakeLock();
+  });
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+  }
+
+  /* ===== Timern — flera ägg, samma kastrull ===== */
   const RING_C = 2 * Math.PI * 147.5;
   $('ring').style.strokeDasharray = RING_C;
-  let endAt = 0, total = 0, raf = 0;
+  let run = null, raf = 0;
 
   $('start').addEventListener('click', () => {
-    const { d, t, seconds, waterC } = calc();
-    if (!seconds) return;
-    total = seconds;
-    endAt = Date.now() + seconds * 1000;
-    $('timer-sub').innerHTML = `<strong>Lägg ägget i det kokande vattnet nu.</strong><br>${d.label} · ${state.grams} g · ${t.label.toLowerCase()} · vattnet kokar vid ${sv(waterC)} °C`;
-    $('timer').classList.remove('done');
+    const all = calcAll();
+    if (all.some((r) => !r.seconds)) return;
+    primeAudio();
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+    const eggs = all
+      .map((r) => ({ label: eggName(r.egg), seconds: r.seconds, state: 'cooking' }))
+      .sort((a, b) => a.seconds - b.seconds);
+    run = { startAt: Date.now(), eggs, total: eggs[eggs.length - 1].seconds, waterC: all[0].waterC };
+    requestWakeLock();
+
+    $('timer').classList.remove('done', 'due');
     $('timer-label').textContent = 'Kokar';
+    $('timer-sub').innerHTML = `<strong>Lägg ner ${eggs.length > 1 ? 'alla äggen' : 'ägget'} i det kokande vattnet nu.</strong><br>Vattnet kokar vid ${sv(run.waterC)} °C`;
+    $('egg-rows').hidden = eggs.length < 2;
     $('cancel').textContent = 'Avbryt';
-    $('cancel').classList.remove('primary');
+    $('cancel').className = 'cancel-btn';
     show('timer');
     tick();
   });
 
   function tick() {
-    const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-    $('big-time').textContent = fmt(left);
-    $('ring').style.strokeDashoffset = RING_C * Math.max(0, (endAt - Date.now()) / (total * 1000));
-    if (left <= 0) return finish();
+    if (!run) return;
+    const elapsed = (Date.now() - run.startAt) / 1000;
+    run.eggs.forEach((e) => {
+      if (e.state === 'cooking' && elapsed >= e.seconds) {
+        e.state = 'due';
+        startAlarm(e.label);
+      }
+    });
+
+    $('ring').style.strokeDashoffset = RING_C * Math.max(0, 1 - elapsed / run.total);
+
+    const due = run.eggs.find((e) => e.state === 'due');
+    const next = run.eggs.find((e) => e.state === 'cooking');
+    if (due) {
+      $('timer').classList.add('due');
+      $('timer-label').textContent = 'Klart!';
+      $('big-time').textContent = 'Ta upp!';
+      $('timer-sub').innerHTML = `<strong>${due.label} är färdigt</strong> — ta upp det och spola kallt.`;
+      $('cancel').textContent = run.eggs.every((e) => e.state !== 'cooking') && run.eggs.filter((e) => e.state === 'due').length === 1
+        ? 'Upptaget ✓' : 'Upptaget ✓';
+      $('cancel').className = 'cancel-btn due';
+    } else {
+      $('timer').classList.remove('due');
+      $('timer-label').textContent = 'Kokar';
+      if (next) {
+        const left = Math.max(0, Math.ceil(next.seconds - elapsed));
+        $('big-time').textContent = fmt(left);
+        if (run.eggs.length > 1) {
+          $('timer-sub').innerHTML = `<strong>Näst upp: ${next.label}</strong><br>Vattnet kokar vid ${sv(run.waterC)} °C`;
+        }
+      }
+      $('cancel').textContent = 'Avbryt';
+      $('cancel').className = 'cancel-btn';
+    }
+
+    if (run.eggs.length > 1) {
+      $('egg-rows').innerHTML = run.eggs
+        .map((e) => {
+          const left = Math.max(0, Math.ceil(e.seconds - elapsed));
+          const cls = e.state === 'due' ? 'due' : e.state === 'up' ? 'up' : '';
+          const t = e.state === 'up' ? '✓' : e.state === 'due' ? 'Ta upp!' : fmt(left);
+          return `<div class="egg-row ${cls}"><span>${e.label}</span><span class="t">${t}</span></div>`;
+        })
+        .join('');
+    }
+
     raf = requestAnimationFrame(tick);
   }
 
   function finish() {
+    cancelAnimationFrame(raf);
+    stopAlarm();
+    releaseWakeLock();
+    $('timer').classList.remove('due');
     $('timer').classList.add('done');
     $('timer-label').textContent = 'Färdigt';
     $('big-time').textContent = 'Klart!';
-    $('timer-sub').textContent = 'Spola ägget under kallt vatten så stannar tillagningen.';
-    $('cancel').textContent = 'Nytt ägg';
-    $('cancel').classList.add('primary');
+    $('timer-sub').textContent = run.eggs.length > 1
+      ? 'Alla ägg upptagna. Spola dem under kallt vatten så stannar tillagningen.'
+      : 'Spola ägget under kallt vatten så stannar tillagningen.';
+    $('egg-rows').hidden = true;
     $('ring').style.strokeDashoffset = 0;
-    if (navigator.vibrate) navigator.vibrate([200, 120, 200, 120, 400]);
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [0, 0.22, 0.44].forEach((t0, i) => {
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
-        o.frequency.value = [880, 1100, 1320][i];
-        g.gain.setValueAtTime(0.001, ctx.currentTime + t0);
-        g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + t0 + 0.03);
-        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t0 + 0.2);
-        o.start(ctx.currentTime + t0); o.stop(ctx.currentTime + t0 + 0.22);
-      });
-    } catch (e) { /* ljud är inte kritiskt */ }
+    $('cancel').textContent = 'Nya ägg';
+    $('cancel').className = 'cancel-btn primary';
+    run = null;
   }
 
   $('cancel').addEventListener('click', () => {
+    if (run) {
+      const due = run.eggs.find((e) => e.state === 'due');
+      if (due) {
+        due.state = 'up';
+        if (!run.eggs.some((e) => e.state === 'due')) stopAlarm();
+        if (run.eggs.every((e) => e.state === 'up')) finish();
+        return;
+      }
+    }
     cancelAnimationFrame(raf);
+    stopAlarm();
+    releaseWakeLock();
+    run = null;
     show('setup');
+    render();
   });
 
   function show(id) {
@@ -844,6 +1121,12 @@
   $('intro').addEventListener('click', (e) => { if (e.target === $('intro')) $('intro-close').click(); });
   $('info').addEventListener('click', () => openIntro(false));
   if (!stored) openIntro(true);
+
+  /* PWA: service worker för offline och hemskärmsinstallation */
+  let swReg = null;
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('./sw.js').then((r) => (swReg = r)).catch(() => {});
+  }
 
   render();
 </script>
