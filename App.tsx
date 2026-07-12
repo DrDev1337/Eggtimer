@@ -148,9 +148,9 @@ export default function App() {
             </Text>
             <Pressable style={styles.gpsButton} onPress={useGps} disabled={locating}>
               {locating ? (
-                <ActivityIndicator size="small" color={colors.inkSoft} />
+                <ActivityIndicator size="small" color={colors.yolkDeep} />
               ) : (
-                <Text style={styles.gpsText}>Hämta via GPS</Text>
+                <Text style={styles.gpsText}>Använd min position</Text>
               )}
             </Pressable>
           </View>
@@ -167,7 +167,7 @@ export default function App() {
         ) : (
           <>
             <View>
-              <Text style={font.label}>Koktid</Text>
+              <Text style={font.label}>Koktid i kokande vatten</Text>
               <Text style={styles.footerTime}>{formatTime(result.seconds)}</Text>
             </View>
             <Pressable
@@ -206,15 +206,15 @@ const styles = StyleSheet.create({
   hint: { ...font.caption, textAlign: 'center' },
   value: { ...font.body, fontVariant: ['tabular-nums'], color: colors.inkSoft },
   gpsButton: {
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderWidth: 1.5,
+    borderColor: colors.yolk,
     borderRadius: radius.pill,
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: 14,
     minWidth: 110,
     alignItems: 'center',
   },
-  gpsText: { fontSize: 12, fontWeight: '600', color: colors.inkSoft },
+  gpsText: { fontSize: 13, fontWeight: '600', color: colors.yolkDeep },
   error: { ...font.caption, color: colors.danger },
   footer: {
     position: 'absolute',

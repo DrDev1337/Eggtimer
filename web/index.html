@@ -175,18 +175,24 @@
   }
   input[type='range']:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; border-radius: 4px; }
 
-  .ghost-btn {
-    border: 1px solid var(--line);
+  .gps-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1.5px solid var(--yolk);
     background: none;
     border-radius: 999px;
-    padding: 6px 14px;
+    padding: 7px 14px;
     font: inherit;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
-    color: var(--ink-soft);
+    color: var(--yolk-deep);
     cursor: pointer;
+    white-space: nowrap;
   }
-  .ghost-btn:focus-visible { outline: 2px solid var(--yolk); }
+  .gps-btn svg { flex: none; }
+  .gps-btn:active { background: rgba(242, 160, 61, 0.12); }
+  .gps-btn:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; }
   .error { font-size: 13px; color: var(--danger); }
 
   /* Fot med koktid */
@@ -299,7 +305,8 @@
   #timer.done .badge { display: flex; }
 
   .big-time { font-size: 68px; font-weight: 200; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
-  .timer-sub { font-size: 13px; color: var(--ink-soft); max-width: 300px; }
+  .timer-sub { font-size: 13px; color: var(--ink-soft); max-width: 300px; line-height: 1.5; }
+  .timer-sub strong { color: var(--ink); font-weight: 600; }
   .timer-label { font-size: 11px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ink-soft); }
   .cancel-btn {
     border: 1px solid var(--ink-faint);
@@ -377,7 +384,13 @@
       <input type="range" id="alt" min="0" max="4500" step="50" value="0" aria-label="Höjd över havet i meter" />
       <div class="row">
         <div class="hint" id="boil-out" style="text-align:left"></div>
-        <button class="ghost-btn" id="gps">Hämta via GPS</button>
+        <button class="gps-btn" id="gps" type="button">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z" />
+            <circle cx="12" cy="10" r="2.6" />
+          </svg>
+          <span id="gps-label">Använd min position</span>
+        </button>
       </div>
       <div class="error" id="gps-err" hidden></div>
     </div>
@@ -385,7 +398,7 @@
 
   <div class="footer">
     <div id="footer-ok">
-      <div class="label">Koktid</div>
+      <div class="label">Koktid i kokande vatten</div>
       <time id="time-out">5:22</time>
     </div>
     <div class="warning" id="footer-warn" hidden></div>
@@ -513,16 +526,16 @@
   $('gps').addEventListener('click', () => {
     $('gps-err').hidden = true;
     if (!navigator.geolocation) return showGpsErr('Ingen platstjänst i den här webbläsaren — dra i reglaget i stället.');
-    $('gps').textContent = 'Hämtar…';
+    $('gps-label').textContent = 'Hämtar…';
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        $('gps').textContent = 'Hämta via GPS';
+        $('gps-label').textContent = 'Använd min position';
         if (pos.coords.altitude == null) return showGpsErr('Ingen höjddata från GPS:en — dra i reglaget i stället.');
         state.alt = Math.min(4500, Math.max(0, Math.round(pos.coords.altitude / 10) * 10));
         $('alt').value = state.alt;
         render();
       },
-      () => { $('gps').textContent = 'Hämta via GPS'; showGpsErr('Kunde inte hämta position — dra i reglaget i stället.'); },
+      () => { $('gps-label').textContent = 'Använd min position'; showGpsErr('Kunde inte hämta position — dra i reglaget i stället.'); },
       { timeout: 8000 }
     );
   });
@@ -572,7 +585,7 @@
     if (!seconds) return;
     total = seconds;
     endAt = Date.now() + seconds * 1000;
-    $('timer-sub').textContent = `${d.label} · ${state.grams} g · ${t.label.toLowerCase()} · vattnet kokar vid ${sv(waterC)} °C`;
+    $('timer-sub').innerHTML = `<strong>Lägg ägget i det kokande vattnet nu.</strong><br>${d.label} · ${state.grams} g · ${t.label.toLowerCase()} · vattnet kokar vid ${sv(waterC)} °C`;
     $('timer').classList.remove('done');
     $('timer-label').textContent = 'Kokar';
     $('cancel').textContent = 'Avbryt';

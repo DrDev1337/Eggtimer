@@ -106,6 +106,7 @@ export function TimerScreen({ totalSeconds, summary, waterC, onClose }: Props) {
       ) : (
         <>
           <Text style={styles.time}>{formatTime(remaining)}</Text>
+          <Text style={styles.instruction}>Lägg ägget i det kokande vattnet nu.</Text>
           <Text style={styles.summary}>
             {summary} · vattnet kokar vid {waterC.toFixed(1).replace('.', ',')} °C
           </Text>
@@ -329,7 +330,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   time: { ...font.timer, marginTop: space.s },
-  summary: { ...font.caption, textAlign: 'center', maxWidth: 280 },
+  instruction: { ...font.body, fontWeight: '600', textAlign: 'center' },
+  summary: { ...font.caption, textAlign: 'center', maxWidth: 280, marginTop: -space.s },
   button: {
     marginTop: space.m,
     paddingVertical: 16,
