@@ -522,6 +522,20 @@
   }
   .modal-close:active { opacity: 0.85; }
   .modal-close:focus-visible { outline: 3px solid var(--yolk); }
+  /* Låga skärmar (t.ex. mobil med webbläsarkrom): komprimera så att
+     allt innehåll slutar med luft ovanför koktidskortet. */
+  @media (max-height: 720px) {
+    #setup .content { gap: 5px; }
+    .section + .section { padding-top: 6px; }
+    .header { padding-top: 0; }
+    .egg { width: 74px; }
+    .seg button { padding: 5px 2px; }
+    .hint { font-size: 12px; }
+    .chip { padding: 4px 10px; font-size: 12px; }
+    input[type='range'] { height: 22px; }
+    .footer { padding: 10px 20px calc(12px + env(safe-area-inset-bottom)); }
+    .footer time { font-size: 28px; }
+  }
 </style>
 
 <!-- ================= INSTÄLLNINGAR ================= -->
