@@ -46,7 +46,7 @@
     display: flex;
     flex-direction: column;
     gap: clamp(6px, 1.2dvh, 16px);
-    padding: clamp(8px, 1.4dvh, 16px) 20px 116px;
+    padding: clamp(8px, 1.4dvh, 16px) 20px calc(136px + env(safe-area-inset-bottom));
     max-width: 560px;
     width: 100%;
     margin: 0 auto;
@@ -310,13 +310,13 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
     background: var(--card);
     border-radius: 28px 28px 0 0;
     box-shadow: 0 -4px 16px rgba(33, 29, 25, 0.08);
   }
-  .footer time { font-size: 32px; font-weight: 200; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-  .multi-note { font-size: 12px; color: var(--ink-soft); }
+  .footer time { font-size: 32px; font-weight: 200; letter-spacing: -1px; font-variant-numeric: tabular-nums; display: block; margin-top: 2px; }
+  .multi-note { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
   .start-btn {
     border: 0;
     background: var(--yolk);
