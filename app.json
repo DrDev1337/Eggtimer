@@ -8,13 +8,13 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "net.viaeuropa.aggtimern",
+      "bundleIdentifier": "com.drdev1337.aggtimern",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "net.viaeuropa.aggtimern",
+      "package": "com.drdev1337.aggtimern",
       "adaptiveIcon": {
         "backgroundColor": "#F7F3EC",
         "foregroundImage": "./assets/android-icon-foreground.png"
