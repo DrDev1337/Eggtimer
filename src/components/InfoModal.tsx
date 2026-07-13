@@ -1,70 +1,52 @@
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, font, radius, space } from '../theme';
-
-const STEPS: { title: string; text: string }[] = [
-  {
-    title: 'Ställ in ditt ägg',
-    text: '— vikt, kylskåpskallt eller rumsvarmt, önskad konsistens och din höjd över havet.',
-  },
-  {
-    title: 'Koka upp vattnet.',
-    text: 'Tiden gäller ägg som läggs i vatten som redan kokar — inte kallt vatten.',
-  },
-  {
-    title: 'Tryck Starta och lägg ner ägget',
-    text: 'försiktigt i vattnet, direkt. Använd gärna en sked.',
-  },
-  {
-    title: 'När timern ringer:',
-    text: 'spola ägget under kallt vatten så stannar tillagningen.',
-  },
-];
+import { Lang, STRINGS } from '../i18n';
+import { colors, radius, space } from '../theme';
 
 interface Props {
   visible: boolean;
   /** Första starten: visa "Påminn mig inte igen". */
   firstRun: boolean;
+  lang: Lang;
   onClose: (dontRemind: boolean) => void;
 }
 
 /** Instruktioner — visas automatiskt vid första starten och via ⓘ-knappen. */
-export function InfoModal({ visible, firstRun, onClose }: Props) {
+export function InfoModal({ visible, firstRun, lang, onClose }: Props) {
   const [dontRemind, setDontRemind] = useState(true);
+  const L = STRINGS[lang];
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={() => onClose(false)}>
       <Pressable style={styles.backdrop} onPress={() => onClose(firstRun && dontRemind)}>
         <Pressable style={styles.card} onPress={() => {}}>
           <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Så kokar du det perfekta ägget</Text>
-            {STEPS.map((s, i) => (
+            <Text style={styles.title}>{L.introTitle}</Text>
+            {L.steps.map((s, i) => (
               <View key={i} style={styles.step}>
                 <View style={styles.stepN}>
                   <Text style={styles.stepNText}>{i + 1}</Text>
                 </View>
                 <Text style={styles.stepText}>
-                  <Text style={styles.stepTitle}>{s.title}</Text> {s.text}
+                  <Text style={styles.stepTitle}>{s[0]}</Text>
+                  {s[1]}
                 </Text>
               </View>
             ))}
-            <Text style={styles.fine}>
-              Tiden räknas ut med Williams formel från University of Exeter — därför frågar appen
-              om vikt, temperatur och höjd över havet.
-            </Text>
+            <Text style={styles.fine}>{L.introFine}</Text>
             {firstRun && (
               <Pressable style={styles.remember} onPress={() => setDontRemind(!dontRemind)}>
                 <View style={[styles.checkbox, dontRemind && styles.checkboxOn]}>
                   {dontRemind && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <Text style={styles.rememberText}>Påminn mig inte igen</Text>
+                <Text style={styles.rememberText}>{L.dontRemind}</Text>
               </Pressable>
             )}
             <Pressable
               style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.85 }]}
               onPress={() => onClose(firstRun && dontRemind)}
             >
-              <Text style={styles.closeText}>Nu kör vi</Text>
+              <Text style={styles.closeText}>{L.letsGo}</Text>
             </Pressable>
           </ScrollView>
         </Pressable>

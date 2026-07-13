@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { EggVisual } from './src/components/EggVisual';
+import { deviceLang, formatDecimal, Lang, STRINGS } from './src/i18n';
 import { InfoModal } from './src/components/InfoModal';
 import { Segmented } from './src/components/Segmented';
 import { Slider } from './src/components/Slider';
@@ -44,8 +45,6 @@ interface EggConfig {
 const DEFAULT_EGG: EggConfig = { doneness: 'creamy', grams: 58, temp: 'fridge' };
 
 const sizeLabel = (g: number) => SIZES.find((s) => s.grams === g)?.label ?? `${g} g`;
-const eggName = (e: EggConfig) =>
-  `${DONENESS.find((d) => d.key === e.doneness)!.label} ${sizeLabel(e.grams)}`;
 
 /** Position → exakt markhöjd via Open-Meteos höjddatabas (GPS-höjd är skakig). */
 async function elevationFromCoords(lat: number, lon: number): Promise<number> {
@@ -75,7 +74,10 @@ export default function App() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [firstRun, setFirstRun] = useState(false);
+  const [lang, setLang] = useState<Lang>(deviceLang());
   const loaded = useRef(false);
+  const L = STRINGS[lang];
+  const eggName = (e: EggConfig) => `${L.donenessName[e.doneness]} ${sizeLabel(e.grams)}`;
   const { height: windowH } = useWindowDimensions();
   const compact = windowH < 760;
 
@@ -108,6 +110,7 @@ export default function App() {
             }
           }
           setAltitude(Math.min(4500, Math.max(0, saved.alt | 0)));
+          if (saved.lang === 'sv' || saved.lang === 'en') setLang(saved.lang);
         }
       } catch {
         // Trasig lagring — kör standardinställningar.
@@ -120,10 +123,10 @@ export default function App() {
   // Minns inställningarna mellan starter.
   useEffect(() => {
     if (!loaded.current) return;
-    AsyncStorage.setItem(STATE_KEY, JSON.stringify({ eggs, active, alt: altitude })).catch(
+    AsyncStorage.setItem(STATE_KEY, JSON.stringify({ eggs, active, alt: altitude, lang })).catch(
       () => {}
     );
-  }, [eggs, active, altitude]);
+  }, [eggs, active, altitude, lang]);
 
   const closeInfo = (dontRemind: boolean) => {
     setShowInfo(false);
@@ -162,7 +165,7 @@ export default function App() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationError('Platsåtkomst nekades — dra i reglaget i stället.');
+        setLocationError(L.errDenied);
         return;
       }
       const pos = await Location.getCurrentPositionAsync({
@@ -175,12 +178,12 @@ export default function App() {
         alt = pos.coords.altitude; // reservplan: GPS-höjden rakt av
       }
       if (alt == null) {
-        setLocationError('Ingen höjddata gick att hämta — dra i reglaget i stället.');
+        setLocationError(L.errNoAlt);
         return;
       }
       setAltitude(Math.min(4500, Math.max(0, Math.round(alt / 5) * 5)));
     } catch {
-      setLocationError('Kunde inte hämta position — dra i reglaget i stället.');
+      setLocationError(L.errNoPos);
     } finally {
       setLocating(false);
     }
@@ -193,7 +196,7 @@ export default function App() {
     return (
       <>
         <StatusBar style="dark" />
-        <TimerScreen eggs={timerEggs} waterC={waterC} onClose={() => setScreen('setup')} />
+        <TimerScreen eggs={timerEggs} waterC={waterC} lang={lang} onClose={() => setScreen('setup')} />
       </>
     );
   }
@@ -206,7 +209,14 @@ export default function App() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeIn.duration(600)} style={styles.header}>
-          <Text style={styles.wordmark}>ÄGGTIMERN</Text>
+          <Pressable
+            style={styles.langButton}
+            onPress={() => setLang(lang === 'sv' ? 'en' : 'sv')}
+            accessibilityLabel="Byt språk / switch language"
+          >
+            <Text style={styles.langText}>{L.otherLang}</Text>
+          </Pressable>
+          <Text style={styles.wordmark}>{L.wordmark}</Text>
           <Pressable
             style={styles.infoButton}
             onPress={() => setShowInfo(true)}
@@ -221,7 +231,7 @@ export default function App() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(60).duration(600)} style={styles.section}>
-          <Text style={font.label}>Ägg i kastrullen</Text>
+          <Text style={font.label}>{L.eggsInPot}</Text>
           <View style={styles.chips}>
             {eggs.map((e, i) => (
               <Pressable
@@ -255,27 +265,27 @@ export default function App() {
                   setActive(eggs.length);
                 }}
               >
-                <Text style={styles.chipAddText}>+ Lägg till ägg</Text>
+                <Text style={styles.chipAddText}>{L.addEgg}</Text>
               </Pressable>
             )}
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(120).duration(600)} style={[styles.section, styles.divided]}>
-          <Text style={font.label}>Konsistens</Text>
+          <Text style={font.label}>{L.doneness}</Text>
           <Segmented
-            options={DONENESS}
+            options={DONENESS.map((d) => ({ key: d.key, label: L.donenessName[d.key] }))}
             value={egg.doneness}
             onChange={(k) => updateEgg({ doneness: k })}
           />
           <Text style={styles.hint}>
-            {selectedDoneness.description} · {selectedDoneness.yolkC} °C i gulans mitt
+            {L.yolkCenter(L.donenessDesc[egg.doneness], selectedDoneness.yolkC)}
           </Text>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(180).duration(600)} style={[styles.section, styles.divided]}>
           <View style={styles.rowBetween}>
-            <Text style={font.label}>Vikt</Text>
+            <Text style={font.label}>{L.weight}</Text>
             <Text style={styles.value}>{egg.grams} g</Text>
           </View>
           <Segmented
@@ -287,11 +297,11 @@ export default function App() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(240).duration(600)} style={[styles.section, styles.divided]}>
-          <Text style={font.label}>Starttemperatur</Text>
+          <Text style={font.label}>{L.startTemp}</Text>
           <Segmented
             options={START_TEMPS.map((t) => ({
               key: t.key,
-              label: t.label,
+              label: L.tempName[t.key],
               sub: `${t.celsius} °C`,
             }))}
             value={egg.temp}
@@ -301,39 +311,36 @@ export default function App() {
 
         <Animated.View entering={FadeInDown.delay(300).duration(600)} style={[styles.section, styles.divided]}>
           <View style={styles.rowBetween}>
-            <Text style={font.label}>Höjd över havet</Text>
+            <Text style={font.label}>{L.altitude}</Text>
             <Pressable style={styles.gpsButton} onPress={useGps} disabled={locating}>
               {locating ? (
                 <ActivityIndicator size="small" color={colors.yolkDeep} />
               ) : (
-                <Text style={styles.gpsText}>Använd min position</Text>
+                <Text style={styles.gpsText}>{L.useLocation}</Text>
               )}
             </Pressable>
           </View>
           <Slider min={0} max={4500} step={50} value={altitude} onChange={setAltitude} />
-          <Text style={font.caption}>
-            {altitude} m över havet · vattnet kokar vid {waterC.toFixed(1).replace('.', ',')} °C
-          </Text>
+          <Text style={font.caption}>{L.boilInfo(altitude, formatDecimal(lang, waterC))}</Text>
           {locationError && <Text style={styles.error}>{locationError}</Text>}
         </Animated.View>
       </ScrollView>
 
-      <InfoModal visible={showInfo} firstRun={firstRun} onClose={closeInfo} />
+      <InfoModal visible={showInfo} firstRun={firstRun} lang={lang} onClose={closeInfo} />
 
       <Animated.View layout={LinearTransition} style={styles.footer}>
         {broken ? (
           <Text style={styles.warning}>
-            {eggName(broken.egg)}: på {altitude} m kokar vattnet vid {broken.waterC.toFixed(0)} °C
-            — gulan kan aldrig nå {broken.d.yolkC} °C. Välj en lösare konsistens.
+            {L.warning(eggName(broken.egg), altitude, broken.waterC.toFixed(0), broken.d.yolkC)}
           </Text>
         ) : (
           <>
             <View>
-              <Text style={font.label}>Koktid i kokande vatten</Text>
+              <Text style={font.label}>{L.cookTime}</Text>
               <Text style={styles.footerTime}>{formatTime(times[times.length - 1])}</Text>
               {eggs.length > 1 && (
                 <Text style={styles.multiNote}>
-                  {eggs.length} ägg · första klart {formatTime(times[0])}
+                  {L.multiNote(eggs.length, formatTime(times[0]))}
                 </Text>
               )}
             </View>
@@ -341,7 +348,7 @@ export default function App() {
               style={({ pressed }) => [styles.startButton, pressed && { opacity: 0.85 }]}
               onPress={() => setScreen('timer')}
             >
-              <Text style={styles.startText}>Starta</Text>
+              <Text style={styles.startText}>{L.start}</Text>
             </Pressable>
           </>
         )}
@@ -386,6 +393,18 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
     fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
   },
+  langButton: {
+    position: 'absolute',
+    left: 0,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.inkFaint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langText: { fontSize: 11, fontWeight: '700', letterSpacing: 1, color: colors.inkSoft },
   eggWrap: { alignItems: 'center', marginVertical: -6 },
   section: { gap: 8 },
   scrollCompact: { gap: 8, paddingBottom: 100 },

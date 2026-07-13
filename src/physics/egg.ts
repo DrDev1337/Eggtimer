@@ -28,9 +28,9 @@ export const SIZES: { key: SizeKey; label: string; grams: number; range: string 
 
 export type TempKey = 'fridge' | 'room';
 
-export const START_TEMPS: { key: TempKey; label: string; celsius: number }[] = [
-  { key: 'fridge', label: 'Kylskåpskallt', celsius: 4 },
-  { key: 'room', label: 'Rumsvarmt', celsius: 20 },
+export const START_TEMPS: { key: TempKey; celsius: number }[] = [
+  { key: 'fridge', celsius: 4 },
+  { key: 'room', celsius: 20 },
 ];
 
 export type DonenessKey = 'soft' | 'creamy' | 'firm' | 'hard';
@@ -38,17 +38,13 @@ export type DonenessKey = 'soft' | 'creamy' | 'firm' | 'hard';
 /**
  * Måltemperaturer i gulans mitt. Gulan börjar tjockna ~63 °C,
  * är krämig/"jammy" runt 67 °C, mjukt fast ~71 °C och helt fast ~77 °C.
+ * (Namnen som visas för användaren ligger i src/i18n.ts.)
  */
-export const DONENESS: {
-  key: DonenessKey;
-  label: string;
-  description: string;
-  yolkC: number;
-}[] = [
-  { key: 'soft', label: 'Löskokt', description: 'Rinnande gula', yolkC: 63 },
-  { key: 'creamy', label: 'Krämig', description: 'Tjock, gyllene kräm', yolkC: 67 },
-  { key: 'firm', label: 'Fast', description: 'Fast men fuktig gula', yolkC: 71 },
-  { key: 'hard', label: 'Hårdkokt', description: 'Helt genomkokt', yolkC: 77 },
+export const DONENESS: { key: DonenessKey; yolkC: number }[] = [
+  { key: 'soft', yolkC: 63 },
+  { key: 'creamy', yolkC: 67 },
+  { key: 'firm', yolkC: 71 },
+  { key: 'hard', yolkC: 77 },
 ];
 
 /**

@@ -15,6 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
+import { Lang, STRINGS, formatDecimal } from '../i18n';
 import { formatTime } from '../physics/egg';
 import { colors, font, radius, space } from '../theme';
 import { EGG_PATH } from './EggVisual';
@@ -48,11 +49,13 @@ interface Props {
   /** Sorterade stigande efter koktid. */
   eggs: TimerEgg[];
   waterC: number;
+  lang: Lang;
   onClose: () => void;
 }
 
-export function TimerScreen({ eggs, waterC, onClose }: Props) {
+export function TimerScreen({ eggs, waterC, lang, onClose }: Props) {
   useKeepAwake();
+  const L = STRINGS[lang];
   const total = eggs[eggs.length - 1].seconds;
   const startAt = useRef(Date.now());
   const [now, setNow] = useState(Date.now());
@@ -78,7 +81,7 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
         }
         for (const egg of eggs) {
           await Notifications.scheduleNotificationAsync({
-            content: { title: 'Äggtimern', body: `Ta upp: ${egg.label}!`, sound: true },
+            content: { title: L.notifTitle, body: L.notifBody(egg.label), sound: true },
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
               seconds: Math.max(1, egg.seconds),
@@ -93,6 +96,7 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
     return () => {
       Notifications.cancelAllScheduledNotificationsAsync().catch(() => {});
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eggs]);
 
   const progress = useSharedValue(0);
@@ -141,7 +145,7 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={font.label}>{done ? 'Färdigt' : hasDue ? 'Klart!' : 'Kokar'}</Text>
+      <Text style={font.label}>{done ? L.finished : hasDue ? L.ready : L.boiling}</Text>
 
       <View style={styles.ringWrap}>
         <Svg
@@ -168,18 +172,14 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
 
       {done ? (
         <>
-          <Text style={styles.time}>Klart!</Text>
-          <Text style={styles.summary}>
-            {multi
-              ? 'Alla ägg upptagna. Spola dem under kallt vatten så stannar tillagningen.'
-              : 'Spola ägget under kallt vatten så stannar tillagningen.'}
-          </Text>
+          <Text style={styles.time}>{L.ready}</Text>
+          <Text style={styles.summary}>{multi ? L.doneRinseN : L.doneRinse1}</Text>
         </>
       ) : hasDue ? (
         <>
-          <Text style={styles.dueTime}>Ta upp!</Text>
-          <Text style={styles.instruction}>{eggs[dueIndex].label} är färdigt</Text>
-          <Text style={styles.summary}>Ta upp det och spola kallt.</Text>
+          <Text style={styles.dueTime}>{L.takeOut}</Text>
+          <Text style={styles.instruction}>{L.isDone(eggs[dueIndex].label)}</Text>
+          <Text style={styles.summary}>{L.takeRinse}</Text>
         </>
       ) : (
         <>
@@ -187,11 +187,11 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
             {formatTime(Math.max(0, Math.ceil(eggs[nextIndex]?.seconds - elapsed || 0)))}
           </Text>
           <Text style={styles.instruction}>
-            {multi ? `Näst upp: ${eggs[nextIndex]?.label}` : 'Lägg ägget i det kokande vattnet nu.'}
+            {multi ? L.nextUp(eggs[nextIndex]?.label ?? '') : L.putIn}
           </Text>
           <Text style={styles.summary}>
-            {multi ? 'Lägg ner alla äggen samtidigt · ' : ''}vattnet kokar vid{' '}
-            {waterC.toFixed(1).replace('.', ',')} °C
+            {multi ? `${L.putInAll} · ` : ''}
+            {L.waterBoilsAt(formatDecimal(lang, waterC))}
           </Text>
         </>
       )}
@@ -205,7 +205,7 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
               <View key={i} style={[styles.rowItem, s === 'due' && styles.rowDue, s === 'up' && styles.rowUp]}>
                 <Text style={styles.rowLabel}>{egg.label}</Text>
                 <Text style={[styles.rowTime, s === 'due' && styles.rowTimeDue]}>
-                  {s === 'up' ? '✓' : s === 'due' ? 'Ta upp!' : formatTime(left)}
+                  {s === 'up' ? '✓' : s === 'due' ? L.takeOut : formatTime(left)}
                 </Text>
               </View>
             );
@@ -227,7 +227,7 @@ export function TimerScreen({ eggs, waterC, onClose }: Props) {
             done || hasDue ? styles.buttonTextPrimary : styles.buttonTextGhost,
           ]}
         >
-          {done ? 'Nya ägg' : hasDue ? 'Upptaget ✓' : 'Avbryt'}
+          {done ? L.newEggs : hasDue ? L.gotIt : L.cancel}
         </Text>
       </Pressable>
     </View>
