@@ -91,6 +91,26 @@
   }
   .info-btn:active { background: var(--line); }
   .info-btn:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; }
+  .lang-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    translate: 0 -50%;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink-faint);
+    background: none;
+    color: var(--ink-soft);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .lang-btn:active { background: var(--line); }
+  .lang-btn:focus-visible { outline: 2px solid var(--yolk); outline-offset: 2px; }
 
   .label {
     font-size: 11px;
@@ -508,7 +528,8 @@
 <div class="view active" id="setup">
   <div class="content">
     <div class="header">
-      <div class="wordmark">ÄGGTIMERN</div>
+      <div class="wordmark" id="wordmark">ÄGGTIMERN</div>
+      <button class="lang-btn" id="lang" type="button" aria-label="Byt språk / switch language">EN</button>
       <button class="info-btn" id="info" type="button" aria-label="Visa instruktioner">i</button>
     </div>
 
@@ -591,20 +612,20 @@
 
     <div class="section">
       <div class="row">
-        <div class="label">Ägg i kastrullen</div>
+        <div class="label" id="l-eggs">Ägg i kastrullen</div>
       </div>
       <div class="chips" id="egg-chips"></div>
     </div>
 
     <div class="section">
-      <div class="label">Konsistens</div>
+      <div class="label" id="l-doneness">Konsistens</div>
       <div class="seg" id="seg-doneness"></div>
       <div class="hint" id="doneness-hint"></div>
     </div>
 
     <div class="section">
       <div class="row">
-        <div class="label">Vikt</div>
+        <div class="label" id="l-weight">Vikt</div>
         <div class="value"><span id="grams-out">58</span> g</div>
       </div>
       <div class="seg" id="seg-size"></div>
@@ -612,13 +633,13 @@
     </div>
 
     <div class="section">
-      <div class="label">Starttemperatur</div>
+      <div class="label" id="l-temp">Starttemperatur</div>
       <div class="seg" id="seg-temp"></div>
     </div>
 
     <div class="section">
       <div class="row">
-        <div class="label">Höjd över havet</div>
+        <div class="label" id="l-alt">Höjd över havet</div>
         <button class="gps-btn" id="gps" type="button">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z" />
@@ -635,7 +656,7 @@
 
   <div class="footer">
     <div id="footer-ok">
-      <div class="label">Koktid i kokande vatten</div>
+      <div class="label" id="l-cooktime">Koktid i kokande vatten</div>
       <time id="time-out">5:22</time>
       <div class="multi-note" id="multi-note" hidden></div>
     </div>
@@ -687,29 +708,9 @@
 <div class="backdrop" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
   <div class="modal">
     <h2 id="intro-title">Så kokar du det perfekta ägget</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-n">1</div>
-        <p><b>Ställ in dina ägg</b> — vikt, kylskåpskallt eller rumsvarmt, önskad konsistens och din höjd över havet. Lägg till fler ägg med <b>+</b> om ni är flera.</p>
-      </div>
-      <div class="step">
-        <div class="step-n">2</div>
-        <p><b>Koka upp vattnet.</b> Tiden gäller ägg som läggs i vatten som redan kokar — inte kallt vatten.</p>
-      </div>
-      <div class="step">
-        <div class="step-n">3</div>
-        <p><b>Tryck Starta och lägg ner alla ägg samtidigt</b>, försiktigt. Använd gärna en sked.</p>
-      </div>
-      <div class="step">
-        <div class="step-n">4</div>
-        <p><b>Larmet ringer när varje ägg är klart</b> — ta upp det och spola det under kallt vatten så stannar tillagningen.</p>
-      </div>
-    </div>
-    <p class="fine">Tiden räknas ut med Williams formel från University of Exeter — därför frågar appen om vikt, temperatur och höjd över havet. Håll appen öppen medan äggen kokar, så hålls skärmen vaken.</p>
-    <label class="remember" id="remember-row">
-      <input type="checkbox" id="dont-remind" checked />
-      Påminn mig inte igen
-    </label>
+    <div class="steps" id="steps"></div>
+    <p class="fine" id="intro-fine"></p>
+    <label class="remember" id="remember-row"><input type="checkbox" id="dont-remind" checked /><span id="remember-text">Påminn mig inte igen</span></label>
     <button class="modal-close" id="intro-close" type="button">Nu kör vi</button>
   </div>
 </div>
@@ -733,13 +734,87 @@
     return { seconds: Math.round(0.451 * Math.pow(massG, 2 / 3) * Math.log(ratio) * 60), waterC };
   }
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  const sv = (n, d = 1) => n.toFixed(d).replace('.', ',');
+  const sv = (n, d = 1) => n.toFixed(d).replace('.', state.lang === 'sv' ? ',' : '.');
 
+  const STR = {
+    sv: {
+      title: 'Äggtimern', wordmark: 'ÄGGTIMERN',
+      eggsInPot: 'Ägg i kastrullen', addEgg: '+ Lägg till ägg',
+      doneness: 'Konsistens', weight: 'Vikt', startTemp: 'Starttemperatur', altitude: 'Höjd över havet',
+      donenessName: { soft: 'Löskokt', creamy: 'Krämig', firm: 'Fast', hard: 'Hårdkokt' },
+      donenessDesc: { soft: 'Rinnande gula', creamy: 'Tjock, gyllene kräm', firm: 'Fast men fuktig gula', hard: 'Helt genomkokt' },
+      yolkCenter: (d, c) => `${d} · ${c} °C i gulans mitt`,
+      tempName: { fridge: 'Kylskåpskallt', room: 'Rumsvarmt' },
+      useLocation: 'Använd min position', locating: 'Hämtar…',
+      boilInfo: (m, c) => `${m} m över havet · vattnet kokar vid ${c} °C`,
+      cookTime: 'Koktid i kokande vatten',
+      multiNote: (n, tt) => `${n} ägg · första klart ${tt}`,
+      warning: (name, alt, w, y) => `${name}: på ${alt} m kokar vattnet vid ${w} °C — gulan kan aldrig nå ${y} °C. Välj en lösare konsistens.`,
+      start: 'Starta', boiling: 'Kokar', ready: 'Klart!', finished: 'Färdigt', takeOut: 'Ta upp!',
+      putIn: (n) => `Lägg ner ${n > 1 ? 'alla äggen' : 'ägget'} i det kokande vattnet nu.`,
+      waterBoilsAt: (c) => `Vattnet kokar vid ${c} °C`,
+      nextUp: (l) => `Näst upp: ${l}`,
+      isDone: (l) => `${l} är färdigt`, takeRinse: ' — ta upp det och spola kallt.',
+      gotIt: 'Upptaget ✓', cancel: 'Avbryt', newEggs: 'Nya ägg',
+      doneRinse1: 'Spola ägget under kallt vatten så stannar tillagningen.',
+      doneRinseN: 'Alla ägg upptagna. Spola dem under kallt vatten så stannar tillagningen.',
+      notif: (l) => `Ta upp: ${l}!`,
+      errNoGeo: 'Ingen platstjänst i den här webbläsaren — dra i reglaget i stället.',
+      errNoAlt: 'Ingen höjddata gick att hämta — dra i reglaget i stället.',
+      errNoPos: 'Kunde inte hämta position — dra i reglaget i stället.',
+      introTitle: 'Så kokar du det perfekta ägget',
+      steps: [
+        ['Ställ in dina ägg', ' — vikt, kylskåpskallt eller rumsvarmt, önskad konsistens och din höjd över havet. Lägg till fler ägg med + om ni är flera.'],
+        ['Koka upp vattnet.', ' Tiden gäller ägg som läggs i vatten som redan kokar — inte kallt vatten.'],
+        ['Tryck Starta och lägg ner alla ägg samtidigt', ', försiktigt. Använd gärna en sked.'],
+        ['Larmet ringer när varje ägg är klart', ' — ta upp det och spola det under kallt vatten så stannar tillagningen.'],
+      ],
+      introFine: 'Tiden räknas ut med Williams formel från University of Exeter — därför frågar appen om vikt, temperatur och höjd över havet. Håll appen öppen medan äggen kokar, så hålls skärmen vaken.',
+      dontRemind: 'Påminn mig inte igen', letsGo: 'Nu kör vi',
+      otherLang: 'EN',
+    },
+    en: {
+      title: 'Egg Timer', wordmark: 'EGG TIMER',
+      eggsInPot: 'Eggs in the pot', addEgg: '+ Add egg',
+      doneness: 'Doneness', weight: 'Weight', startTemp: 'Starting temperature', altitude: 'Altitude',
+      donenessName: { soft: 'Soft', creamy: 'Jammy', firm: 'Firm', hard: 'Hard' },
+      donenessDesc: { soft: 'Runny yolk', creamy: 'Thick golden custard', firm: 'Set but moist yolk', hard: 'Cooked through' },
+      yolkCenter: (d, c) => `${d} · ${c} °C at the yolk centre`,
+      tempName: { fridge: 'Fridge-cold', room: 'Room temp' },
+      useLocation: 'Use my location', locating: 'Locating…',
+      boilInfo: (m, c) => `${m} m above sea level · water boils at ${c} °C`,
+      cookTime: 'Cook time in boiling water',
+      multiNote: (n, tt) => `${n} eggs · first ready in ${tt}`,
+      warning: (name, alt, w, y) => `${name}: at ${alt} m water boils at ${w} °C — the yolk can never reach ${y} °C. Choose a softer doneness.`,
+      start: 'Start', boiling: 'Boiling', ready: 'Ready!', finished: 'Done', takeOut: 'Take out!',
+      putIn: (n) => `Put ${n > 1 ? 'all the eggs' : 'the egg'} into the boiling water now.`,
+      waterBoilsAt: (c) => `Water boils at ${c} °C`,
+      nextUp: (l) => `Next up: ${l}`,
+      isDone: (l) => `${l} is ready`, takeRinse: ' — take it out and rinse it cold.',
+      gotIt: 'Got it ✓', cancel: 'Cancel', newEggs: 'New eggs',
+      doneRinse1: 'Rinse the egg under cold water to stop the cooking.',
+      doneRinseN: 'All eggs out. Rinse them under cold water to stop the cooking.',
+      notif: (l) => `Take out: ${l}!`,
+      errNoGeo: 'No location service in this browser — use the slider instead.',
+      errNoAlt: 'Could not fetch altitude data — use the slider instead.',
+      errNoPos: 'Could not get your location — use the slider instead.',
+      introTitle: 'How to boil the perfect egg',
+      steps: [
+        ['Set up your eggs', ' — weight, fridge-cold or room temperature, desired doneness and your altitude. Add more eggs with + if you are cooking for several.'],
+        ['Bring the water to a boil.', ' The time applies to eggs lowered into already boiling water — not cold water.'],
+        ['Press Start and lower all the eggs at once', ', gently. A spoon helps.'],
+        ['The alarm rings as each egg gets ready', ' — take it out and rinse it under cold water to stop the cooking.'],
+      ],
+      introFine: 'The time is computed with the Williams formula from the University of Exeter — that is why the app asks about weight, temperature and altitude. Keep the app open while the eggs boil and the screen stays awake.',
+      dontRemind: "Don't remind me again", letsGo: "Let's go",
+      otherLang: 'SV',
+    },
+  };
   const DONENESS = [
-    { key: 'soft', label: 'Löskokt', desc: 'Rinnande gula', yolkC: 63 },
-    { key: 'creamy', label: 'Krämig', desc: 'Tjock, gyllene kräm', yolkC: 67 },
-    { key: 'firm', label: 'Fast', desc: 'Fast men fuktig gula', yolkC: 71 },
-    { key: 'hard', label: 'Hårdkokt', desc: 'Helt genomkokt', yolkC: 77 },
+    { key: 'soft', yolkC: 63 },
+    { key: 'creamy', yolkC: 67 },
+    { key: 'firm', yolkC: 71 },
+    { key: 'hard', yolkC: 77 },
   ];
   const SIZES = [
     { key: 's', label: 'S', grams: 48 },
@@ -748,14 +823,19 @@
     { key: 'xl', label: 'XL', grams: 78 },
   ];
   const TEMPS = [
-    { key: 'fridge', label: 'Kylskåpskallt', sub: '4 °C', c: 4 },
-    { key: 'room', label: 'Rumsvarmt', sub: '20 °C', c: 20 },
+    { key: 'fridge', sub: '4 °C', c: 4 },
+    { key: 'room', sub: '20 °C', c: 20 },
   ];
   const MAX_EGGS = 6;
 
   /* ===== Tillstånd, med minne mellan besök ===== */
   const STATE_KEY = 'aggtimern-state';
-  const state = { eggs: [{ doneness: 'creamy', grams: 58, temp: 'fridge' }], active: 0, alt: 0 };
+  const state = {
+    eggs: [{ doneness: 'creamy', grams: 58, temp: 'fridge' }],
+    active: 0,
+    alt: 0,
+    lang: (navigator.language || 'sv').toLowerCase().startsWith('sv') ? 'sv' : 'en',
+  };
   try {
     const saved = JSON.parse(localStorage.getItem(STATE_KEY));
     if (saved && Array.isArray(saved.eggs) && saved.eggs.length) {
@@ -766,6 +846,7 @@
       if (!state.eggs.length) state.eggs = [{ doneness: 'creamy', grams: 58, temp: 'fridge' }];
       state.active = Math.min(state.eggs.length - 1, Math.max(0, +saved.active || 0));
       state.alt = Math.min(4500, Math.max(0, +saved.alt || 0));
+      if (saved.lang === 'sv' || saved.lang === 'en') state.lang = saved.lang;
     }
   } catch (e) { /* trasig eller avstängd lagring — kör standard */ }
   function persist() {
@@ -773,19 +854,19 @@
   }
 
   const $ = (id) => document.getElementById(id);
+  const L = () => STR[state.lang];
   const activeEgg = () => state.eggs[state.active];
   const sizeLabel = (g) => SIZES.find((s) => s.grams === g)?.label ?? `${g} g`;
-  const eggName = (e) => `${DONENESS.find((d) => d.key === e.doneness).label} ${sizeLabel(e.grams)}`;
+  const eggName = (e) => `${L().donenessName[e.doneness]} ${sizeLabel(e.grams)}`;
 
   /* Segmenterad väljare med glidande indikator */
-  function buildSeg(el, options, getActive, onPick) {
+  function buildSeg(el, options, getActive, onPick, labelOf) {
     const pill = document.createElement('span');
     pill.className = 'pill';
     el.appendChild(pill);
     options.forEach((o) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.innerHTML = o.sub ? `${o.label}<small>${o.sub}</small>` : o.label;
       b.addEventListener('click', () => { onPick(o); render(); });
       el.appendChild(b);
     });
@@ -795,17 +876,24 @@
       pill.style.width = `calc(${w}% - ${8 / options.length}px)`;
       pill.style.left = idx < 0 ? '4px' : `calc(4px + ${idx * w}%)`;
       pill.style.opacity = idx < 0 ? '0' : '1';
-      [...el.querySelectorAll('button')].forEach((b, i) => b.classList.toggle('on', i === idx));
+      [...el.querySelectorAll('button')].forEach((b, i) => {
+        const o = options[i];
+        const lab = labelOf(o);
+        b.innerHTML = lab.sub ? `${lab.label}<small>${lab.sub}</small>` : lab.label;
+        b.classList.toggle('on', i === idx);
+      });
     };
   }
 
   const upd = [
-    buildSeg($('seg-doneness'), DONENESS, () => activeEgg().doneness, (o) => (activeEgg().doneness = o.key)),
+    buildSeg($('seg-doneness'), DONENESS, () => activeEgg().doneness, (o) => (activeEgg().doneness = o.key),
+      (o) => ({ label: L().donenessName[o.key] })),
     buildSeg($('seg-size'), SIZES, () => SIZES.find((s) => s.grams === activeEgg().grams)?.key, (o) => {
       activeEgg().grams = o.grams;
       $('grams').value = o.grams;
-    }),
-    buildSeg($('seg-temp'), TEMPS, () => activeEgg().temp, (o) => (activeEgg().temp = o.key)),
+    }, (o) => ({ label: o.label })),
+    buildSeg($('seg-temp'), TEMPS, () => activeEgg().temp, (o) => (activeEgg().temp = o.key),
+      (o) => ({ label: L().tempName[o.key], sub: o.sub })),
   ];
 
   /* Äggchippen */
@@ -837,7 +925,7 @@
       const add = document.createElement('button');
       add.type = 'button';
       add.className = 'chip add';
-      add.textContent = '+ Lägg till ägg';
+      add.textContent = L().addEgg;
       add.addEventListener('click', () => {
         state.eggs.push({ ...activeEgg() });
         state.active = state.eggs.length - 1;
@@ -865,8 +953,8 @@
   }
   $('gps').addEventListener('click', () => {
     $('gps-err').hidden = true;
-    if (!navigator.geolocation) return showGpsErr('Ingen platstjänst i den här webbläsaren — dra i reglaget i stället.');
-    $('gps-label').textContent = 'Hämtar…';
+    if (!navigator.geolocation) return showGpsErr(L().errNoGeo);
+    $('gps-label').textContent = L().locating;
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         let alt = null;
@@ -875,13 +963,13 @@
         } catch (e) {
           alt = pos.coords.altitude; // reservplan: GPS-höjden rakt av
         }
-        $('gps-label').textContent = 'Använd min position';
-        if (alt == null) return showGpsErr('Ingen höjddata gick att hämta — dra i reglaget i stället.');
+        $('gps-label').textContent = L().useLocation;
+        if (alt == null) return showGpsErr(L().errNoAlt);
         state.alt = Math.min(4500, Math.max(0, Math.round(alt / 5) * 5));
         $('alt').value = state.alt;
         render();
       },
-      () => { $('gps-label').textContent = 'Använd min position'; showGpsErr('Kunde inte hämta position — dra i reglaget i stället.'); },
+      () => { $('gps-label').textContent = L().useLocation; showGpsErr(L().errNoPos); },
       { timeout: 8000 }
     );
   });
@@ -895,15 +983,43 @@
     });
   }
 
+  /* Statiska texter — skrivs om vid språkbyte */
+  function applyLang() {
+    const l = L();
+    document.title = l.title;
+    $('wordmark').textContent = l.wordmark;
+    $('lang').textContent = l.otherLang;
+    $('l-eggs').textContent = l.eggsInPot;
+    $('l-doneness').textContent = l.doneness;
+    $('l-weight').textContent = l.weight;
+    $('l-temp').textContent = l.startTemp;
+    $('l-alt').textContent = l.altitude;
+    $('l-cooktime').textContent = l.cookTime;
+    $('start').textContent = l.start;
+    $('gps-label').textContent = l.useLocation;
+    $('intro-title').textContent = l.introTitle;
+    $('steps').innerHTML = l.steps
+      .map((s, i) => `<div class="step"><div class="step-n">${i + 1}</div><p><b>${s[0]}</b>${s[1]}</p></div>`)
+      .join('');
+    $('intro-fine').textContent = l.introFine;
+    $('remember-text').textContent = l.dontRemind;
+    $('intro-close').textContent = l.letsGo;
+  }
+  $('lang').addEventListener('click', () => {
+    state.lang = state.lang === 'sv' ? 'en' : 'sv';
+    applyLang();
+    render();
+  });
+
   function render() {
     const all = calcAll();
     const act = all[state.active];
     $('egg').dataset.d = act.egg.doneness;
-    $('doneness-hint').textContent = `${act.d.desc} · ${act.d.yolkC} °C i gulans mitt`;
+    $('doneness-hint').textContent = L().yolkCenter(L().donenessDesc[act.egg.doneness], act.d.yolkC);
     $('grams-out').textContent = act.egg.grams;
     $('grams').value = act.egg.grams;
     $('alt').value = state.alt;
-    $('boil-out').textContent = `${state.alt} m över havet · vattnet kokar vid ${sv(act.waterC)} °C`;
+    $('boil-out').textContent = L().boilInfo(state.alt, sv(act.waterC));
     sliderFill($('grams'));
     sliderFill($('alt'));
     renderChips();
@@ -918,9 +1034,9 @@
       $('time-out').textContent = fmt(times[times.length - 1]);
       const multi = state.eggs.length > 1;
       $('multi-note').hidden = !multi;
-      if (multi) $('multi-note').textContent = `${state.eggs.length} ägg · första klart ${fmt(times[0])}`;
+      if (multi) $('multi-note').textContent = L().multiNote(state.eggs.length, fmt(times[0]));
     } else {
-      $('footer-warn').textContent = `${eggName(broken.egg)}: på ${state.alt} m kokar vattnet vid ${sv(broken.waterC, 0)} °C — gulan kan aldrig nå ${broken.d.yolkC} °C. Välj en lösare konsistens.`;
+      $('footer-warn').textContent = L().warning(eggName(broken.egg), state.alt, sv(broken.waterC, 0), broken.d.yolkC);
     }
     upd.forEach((u) => u());
     persist();
@@ -966,7 +1082,7 @@
       alarmInterval = setInterval(chime, 1400);
     }
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted' && swReg) {
-      swReg.showNotification('Äggtimern', { body: `Ta upp: ${label}!`, icon: 'icon-192.png', tag: 'aggtimern' }).catch(() => {});
+      swReg.showNotification(L().title, { body: L().notif(label), icon: 'icon-192.png', tag: 'aggtimern' }).catch(() => {});
     }
   }
   function stopAlarm() {
@@ -1005,10 +1121,10 @@
     requestWakeLock();
 
     $('timer').classList.remove('done', 'due');
-    $('timer-label').textContent = 'Kokar';
-    $('timer-sub').innerHTML = `<strong>Lägg ner ${eggs.length > 1 ? 'alla äggen' : 'ägget'} i det kokande vattnet nu.</strong><br>Vattnet kokar vid ${sv(run.waterC)} °C`;
+    $('timer-label').textContent = L().boiling;
+    $('timer-sub').innerHTML = `<strong>${L().putIn(eggs.length)}</strong><br>${L().waterBoilsAt(sv(run.waterC))}`;
     $('egg-rows').hidden = eggs.length < 2;
-    $('cancel').textContent = 'Avbryt';
+    $('cancel').textContent = L().cancel;
     $('cancel').className = 'cancel-btn';
     show('timer');
     tick();
@@ -1030,23 +1146,22 @@
     const next = run.eggs.find((e) => e.state === 'cooking');
     if (due) {
       $('timer').classList.add('due');
-      $('timer-label').textContent = 'Klart!';
-      $('big-time').textContent = 'Ta upp!';
-      $('timer-sub').innerHTML = `<strong>${due.label} är färdigt</strong> — ta upp det och spola kallt.`;
-      $('cancel').textContent = run.eggs.every((e) => e.state !== 'cooking') && run.eggs.filter((e) => e.state === 'due').length === 1
-        ? 'Upptaget ✓' : 'Upptaget ✓';
+      $('timer-label').textContent = L().ready;
+      $('big-time').textContent = L().takeOut;
+      $('timer-sub').innerHTML = `<strong>${L().isDone(due.label)}</strong>${L().takeRinse}`;
+      $('cancel').textContent = L().gotIt;
       $('cancel').className = 'cancel-btn due';
     } else {
       $('timer').classList.remove('due');
-      $('timer-label').textContent = 'Kokar';
+      $('timer-label').textContent = L().boiling;
       if (next) {
         const left = Math.max(0, Math.ceil(next.seconds - elapsed));
         $('big-time').textContent = fmt(left);
         if (run.eggs.length > 1) {
-          $('timer-sub').innerHTML = `<strong>Näst upp: ${next.label}</strong><br>Vattnet kokar vid ${sv(run.waterC)} °C`;
+          $('timer-sub').innerHTML = `<strong>${L().nextUp(next.label)}</strong><br>${L().waterBoilsAt(sv(run.waterC))}`;
         }
       }
-      $('cancel').textContent = 'Avbryt';
+      $('cancel').textContent = L().cancel;
       $('cancel').className = 'cancel-btn';
     }
 
@@ -1055,7 +1170,7 @@
         .map((e) => {
           const left = Math.max(0, Math.ceil(e.seconds - elapsed));
           const cls = e.state === 'due' ? 'due' : e.state === 'up' ? 'up' : '';
-          const t = e.state === 'up' ? '✓' : e.state === 'due' ? 'Ta upp!' : fmt(left);
+          const t = e.state === 'up' ? '✓' : e.state === 'due' ? L().takeOut : fmt(left);
           return `<div class="egg-row ${cls}"><span>${e.label}</span><span class="t">${t}</span></div>`;
         })
         .join('');
@@ -1070,14 +1185,12 @@
     releaseWakeLock();
     $('timer').classList.remove('due');
     $('timer').classList.add('done');
-    $('timer-label').textContent = 'Färdigt';
-    $('big-time').textContent = 'Klart!';
-    $('timer-sub').textContent = run.eggs.length > 1
-      ? 'Alla ägg upptagna. Spola dem under kallt vatten så stannar tillagningen.'
-      : 'Spola ägget under kallt vatten så stannar tillagningen.';
+    $('timer-label').textContent = L().finished;
+    $('big-time').textContent = L().ready;
+    $('timer-sub').textContent = run.eggs.length > 1 ? L().doneRinseN : L().doneRinse1;
     $('egg-rows').hidden = true;
     $('ring').style.strokeDashoffset = 0;
-    $('cancel').textContent = 'Nya ägg';
+    $('cancel').textContent = L().newEggs;
     $('cancel').className = 'cancel-btn primary';
     run = null;
   }
@@ -1129,5 +1242,6 @@
     navigator.serviceWorker.register('./sw.js').then((r) => (swReg = r)).catch(() => {});
   }
 
+  applyLang();
   render();
 </script>
