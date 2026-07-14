@@ -662,7 +662,7 @@
           <span id="gps-label">Använd min position</span>
         </button>
       </div>
-      <input type="range" id="alt" min="0" max="4500" step="50" value="0" aria-label="Höjd över havet i meter" />
+      <input type="range" id="alt" min="0" max="8849" step="1" value="0" aria-label="Höjd över havet i meter" />
       <div class="hint" id="boil-out" style="text-align:left"></div>
       <div class="error" id="gps-err" hidden></div>
     </div>
@@ -842,6 +842,7 @@
     { key: 'room', sub: '20 °C', c: 20 },
   ];
   const TEMP_MIN = 0, TEMP_MAX = 30;
+  const ALT_MAX = 8849; // Mount Everests topp
   const MAX_EGGS = 6;
   const clampTemp = (c) => Math.min(TEMP_MAX, Math.max(TEMP_MIN, Math.round(c)));
 
@@ -867,7 +868,7 @@
         }));
       if (!state.eggs.length) state.eggs = [{ doneness: 'creamy', grams: 58, startC: 4 }];
       state.active = Math.min(state.eggs.length - 1, Math.max(0, +saved.active || 0));
-      state.alt = Math.min(4500, Math.max(0, +saved.alt || 0));
+      state.alt = Math.min(ALT_MAX, Math.max(0, +saved.alt || 0));
       if (saved.lang === 'sv' || saved.lang === 'en') state.lang = saved.lang;
     }
   } catch (e) { /* trasig eller avstängd lagring — kör standard */ }
@@ -1000,7 +1001,7 @@
         }
         $('gps-label').textContent = L().useLocation;
         if (alt == null) return showGpsErr(L().errNoAlt);
-        state.alt = Math.min(4500, Math.max(0, Math.round(alt / 5) * 5));
+        state.alt = Math.min(ALT_MAX, Math.max(0, Math.round(alt / 5) * 5));
         $('alt').value = state.alt;
         render();
       },

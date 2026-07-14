@@ -31,6 +31,7 @@ import {
   TempKey,
   TEMP_MAX,
   TEMP_MIN,
+  ALT_MAX,
 } from './src/physics/egg';
 import { colors, font, radius, space } from './src/theme';
 
@@ -116,7 +117,7 @@ export default function App() {
               setActive(Math.min(restored.length - 1, Math.max(0, saved.active | 0)));
             }
           }
-          setAltitude(Math.min(4500, Math.max(0, saved.alt | 0)));
+          setAltitude(Math.min(ALT_MAX, Math.max(0, saved.alt | 0)));
           if (saved.lang === 'sv' || saved.lang === 'en') setLang(saved.lang);
         }
       } catch {
@@ -188,7 +189,7 @@ export default function App() {
         setLocationError(L.errNoAlt);
         return;
       }
-      setAltitude(Math.min(4500, Math.max(0, Math.round(alt / 5) * 5)));
+      setAltitude(Math.min(ALT_MAX, Math.max(0, Math.round(alt / 5) * 5)));
     } catch {
       setLocationError(L.errNoPos);
     } finally {
@@ -338,7 +339,7 @@ export default function App() {
               )}
             </Pressable>
           </View>
-          <Slider min={0} max={4500} step={50} value={altitude} onChange={setAltitude} />
+          <Slider min={0} max={ALT_MAX} step={1} value={altitude} onChange={setAltitude} />
           <Text style={font.caption}>{L.boilInfo(altitude, formatDecimal(lang, waterC))}</Text>
           {locationError && <Text style={styles.error}>{locationError}</Text>}
         </Animated.View>

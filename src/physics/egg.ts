@@ -45,6 +45,9 @@ export const START_TEMPS: { key: TempKey; celsius: number }[] = [
 export const TEMP_MIN = 0;
 export const TEMP_MAX = 30;
 
+/** Reglagets tak: Mount Everests topp, 8 849 m (mätning 2020). */
+export const ALT_MAX = 8849;
+
 export type DonenessKey = 'soft' | 'creamy' | 'firm' | 'hard';
 
 /**
