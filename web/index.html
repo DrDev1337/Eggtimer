@@ -726,12 +726,13 @@
     const T = 1 / (1 / 373.15 - (8.3145 * Math.log(p / P0)) / 40660);
     return T - 273.15;
   }
+  // K kalibrerad (0.590) mot etablerade koktabeller — se src/physics/egg.ts.
   function cookSeconds(massG, startC, yolkC, altitudeM) {
     const waterC = boilingPointC(altitudeM);
     if (yolkC >= waterC - 1) return { seconds: null, waterC };
     const ratio = (0.76 * (waterC - startC)) / (waterC - yolkC);
     if (ratio <= 1) return { seconds: 0, waterC };
-    return { seconds: Math.round(0.451 * Math.pow(massG, 2 / 3) * Math.log(ratio) * 60), waterC };
+    return { seconds: Math.round(0.59 * Math.pow(massG, 2 / 3) * Math.log(ratio) * 60), waterC };
   }
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   const sv = (n, d = 1) => n.toFixed(d).replace('.', state.lang === 'sv' ? ',' : '.');
@@ -812,9 +813,9 @@
   };
   const DONENESS = [
     { key: 'soft', yolkC: 63 },
-    { key: 'creamy', yolkC: 67 },
-    { key: 'firm', yolkC: 71 },
-    { key: 'hard', yolkC: 77 },
+    { key: 'creamy', yolkC: 68 },
+    { key: 'firm', yolkC: 75 },
+    { key: 'hard', yolkC: 80 },
   ];
   const SIZES = [
     { key: 's', label: 'S', grams: 48 },

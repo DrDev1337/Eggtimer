@@ -3,7 +3,7 @@
  * publicerad i New Scientist (1998). Modellerar ägget som en sfär med jämn
  * värmeledning och beräknar tiden tills gulans mitt når måltemperaturen.
  *
- *   t = 0.451 · M^(2/3) · ln( 0.76 · (T_vatten − T_ägg) / (T_vatten − T_gula) )
+ *   t = K · M^(2/3) · ln( 0.76 · (T_vatten − T_ägg) / (T_vatten − T_gula) )
  *
  *   t        koktid i minuter
  *   M        äggets massa i gram
@@ -11,10 +11,18 @@
  *   T_ägg    äggets starttemperatur
  *   T_gula   måltemperatur i gulans mitt
  *
- * Konstanten 0.451 min/g^(2/3) följer av äggets termiska egenskaper
- * (c ≈ 3.7 J/gK, ρ ≈ 1.038 g/cm³, K ≈ 5.4·10⁻³ W/cmK) och 0.76 av
- * den sfäriska geometrin. Antagande: ägget läggs i redan kokande vatten.
+ * Faktorn 0.76 följer av den sfäriska geometrin. Williams teoretiska
+ * konstant (~0.451 min/g^⅔, ur c ≈ 3.7 J/gK, ρ ≈ 1.038 g/cm³,
+ * K ≈ 5.4·10⁻³ W/cmK) gav i praktiken för korta tider — äggen blev
+ * lösare än avsett. K är därför kalibrerad till 0.590 mot etablerade
+ * koktabeller (Serious Eats, RecipeTin Eats m.fl.): ett stort ägg
+ * (58 g) från kylen i kokande vatten blir löskokt på 6:00, krämigt på
+ * 7:15, fast på 9:30 och hårdkokt på 11:30 — i linje med konsensus.
+ * Formelns form är oförändrad, så vikt, starttemperatur och höjd
+ * skalar fortfarande fysikaliskt korrekt runt den kalibreringen.
+ * Antagande: ägget läggs i redan kokande vatten.
  */
+const WILLIAMS_K = 0.59;
 
 export type SizeKey = 's' | 'm' | 'l' | 'xl';
 
@@ -42,9 +50,9 @@ export type DonenessKey = 'soft' | 'creamy' | 'firm' | 'hard';
  */
 export const DONENESS: { key: DonenessKey; yolkC: number }[] = [
   { key: 'soft', yolkC: 63 },
-  { key: 'creamy', yolkC: 67 },
-  { key: 'firm', yolkC: 71 },
-  { key: 'hard', yolkC: 77 },
+  { key: 'creamy', yolkC: 68 },
+  { key: 'firm', yolkC: 75 },
+  { key: 'hard', yolkC: 80 },
 ];
 
 /**
@@ -88,7 +96,7 @@ export function cookTime({ massG, startTempC, yolkTargetC, altitudeM }: CookInpu
   if (ratio <= 1) {
     return { seconds: 0, waterC };
   }
-  const minutes = 0.451 * Math.pow(massG, 2 / 3) * Math.log(ratio);
+  const minutes = WILLIAMS_K * Math.pow(massG, 2 / 3) * Math.log(ratio);
   return { seconds: Math.round(minutes * 60), waterC };
 }
 

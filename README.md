@@ -35,7 +35,7 @@ Koktiden beräknas med Charles D. H. Williams formel (University of Exeter, publ
 New Scientist 1998), som modellerar ägget som en sfär med jämn värmeledning:
 
 ```
-t = 0,451 · M^(2/3) · ln( 0,76 · (T_vatten − T_ägg) / (T_vatten − T_gula) )
+t = K · M^(2/3) · ln( 0,76 · (T_vatten − T_ägg) / (T_vatten − T_gula) )
 ```
 
 - `t` — koktid i minuter
@@ -44,13 +44,17 @@ t = 0,451 · M^(2/3) · ln( 0,76 · (T_vatten − T_ägg) / (T_vatten − T_gula
 - `T_ägg` — äggets starttemperatur
 - `T_gula` — måltemperatur i gulans mitt
 
-Konstanten 0,451 min/g^⅔ följer av äggets termiska egenskaper (värmekapacitet ≈ 3,7 J/g·K,
-densitet ≈ 1,038 g/cm³, värmeledningsförmåga ≈ 5,4·10⁻³ W/cm·K) och faktorn 0,76 av den
-sfäriska geometrin.
+Faktorn 0,76 följer av den sfäriska geometrin. Williams teoretiska konstant (~0,451 min/g^⅔,
+härledd ur värmekapacitet ≈ 3,7 J/g·K, densitet ≈ 1,038 g/cm³, värmeledningsförmåga
+≈ 5,4·10⁻³ W/cm·K) gav i praktiktester **för korta tider** — äggen blev lösare än avsett.
+Konstanten `K` är därför kalibrerad till **0,590** mot etablerade koktabeller (Serious Eats,
+RecipeTin Eats m.fl.). Formelns form är oförändrad, så vikt, starttemperatur och höjd skalar
+fortfarande fysikaliskt korrekt runt kalibreringen.
 
-**Konsistens = gulans temperatur.** Gulan börjar tjockna vid ~63 °C, är krämig ("jammy")
-runt 67 °C, mjukt fast vid ~71 °C och helt fast vid ~77 °C. Appens fyra lägen motsvarar
-just de måltemperaturerna.
+**Konsistens = gulans temperatur.** Appens fyra lägen motsvarar måltemperaturer i gulans mitt:
+löskokt 63 °C, krämig 68 °C, fast 75 °C och hårdkokt 80 °C. Ett stort ägg (58 g) ur kylen
+i kokande vatten blir då löskokt på **6:00**, krämigt på **7:15**, fast på **9:30** och
+hårdkokt på **11:30** — i linje med konsensus i koktabellerna nedan.
 
 **Höjden över havet** sänker kokpunkten med ungefär 1 °C per 300 m. Appen beräknar
 lufttrycket med barometriska formeln och kokpunkten med Clausius–Clapeyrons ekvation:
@@ -66,6 +70,8 @@ Hela modellen ligger i [`src/physics/egg.ts`](src/physics/egg.ts) med enhetstest
 - [Towards the perfect soft boiled egg — Khymos](https://khymos.org/2009/04/09/towards-the-perfect-soft-boiled-egg/)
 - [The Egg Calculator — ChefSteps](https://www.chefsteps.com/activities/the-egg-calculator)
 - [Sous Vide Egg Guide — Anova Culinary](https://anovaculinary.com/pages/sous-vide-egg-guide)
+- [How Long to Boil Eggs: Timing Chart — Fond Kitchen](https://fond.kitchen/blog/how-long-to-boil-eggs/) (kalibrering)
+- [How to Boil Eggs — RecipeTin Eats](https://www.recipetineats.com/how-to-boil-eggs/) (kalibrering)
 - [Boiling Point at Altitude — Omni Calculator](https://www.omnicalculator.com/chemistry/boiling-point-altitude)
 - [High Altitude Cooking — USDA FSIS](https://www.fsis.usda.gov/food-safety/safe-food-handling-and-preparation/food-safety-basics/high-altitude-cooking)
 - [High Elevation Hard-Cooked Eggs — Colorado State University Extension](https://extension.colostate.edu/resource/high-altitude-hard-cooked-eggs/)

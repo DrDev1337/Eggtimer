@@ -17,14 +17,16 @@ test('kokpunkt sjunker med höjden (Denver ~95 °C, Everest ~71 °C)', () => {
   assert.ok(everest > 69 && everest < 73, `Everest: ${everest}`);
 });
 
-test('M-ägg från kylen, löskokt: ca 4,5 min (Williams formel)', () => {
+// Kalibrerade riktvärden mot etablerade koktabeller (stort ägg ur kylen,
+// kokande vatten): löskokt ~6 min, hårdkokt ~11,5 min.
+test('M-ägg från kylen, löskokt: ca 6 min', () => {
   const { seconds } = cookTime({ massG: 58, startTempC: 4, yolkTargetC: 63, altitudeM: 0 });
-  assert.ok(seconds !== null && seconds > 4 * 60 && seconds < 5 * 60, `fick ${seconds}s`);
+  assert.ok(seconds !== null && seconds > 5.5 * 60 && seconds < 6.5 * 60, `fick ${seconds}s`);
 });
 
-test('M-ägg från kylen, hårdkokt: ca 8 min', () => {
-  const { seconds } = cookTime({ massG: 58, startTempC: 4, yolkTargetC: 77, altitudeM: 0 });
-  assert.ok(seconds !== null && seconds > 7 * 60 && seconds < 9 * 60, `fick ${seconds}s`);
+test('M-ägg från kylen, hårdkokt: ca 11,5 min', () => {
+  const { seconds } = cookTime({ massG: 58, startTempC: 4, yolkTargetC: 80, altitudeM: 0 });
+  assert.ok(seconds !== null && seconds > 10.5 * 60 && seconds < 12.5 * 60, `fick ${seconds}s`);
 });
 
 test('rumsvarmt ägg går snabbare än kylskåpskallt', () => {
