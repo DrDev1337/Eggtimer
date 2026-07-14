@@ -163,6 +163,14 @@
     line-height: 1;
   }
   .chip.on .x { background: var(--bg); }
+  .chip-time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--yolk-deep);
+    padding-left: 8px;
+    margin-left: 2px;
+    border-left: 1px solid var(--ink-faint);
+  }
   .chip.add {
     background: none;
     border-style: dashed;
@@ -310,13 +318,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+    padding: 20px 22px calc(22px + env(safe-area-inset-bottom));
     background: var(--card);
     border-radius: 28px 28px 0 0;
     box-shadow: 0 -4px 16px rgba(33, 29, 25, 0.08);
   }
-  .footer time { font-size: 32px; font-weight: 200; letter-spacing: -1px; font-variant-numeric: tabular-nums; display: block; margin-top: 2px; }
-  .multi-note { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  #footer-ok { display: flex; flex-direction: column; gap: 5px; }
+  .footer .label { line-height: 1; }
+  .footer time { font-size: 38px; font-weight: 200; letter-spacing: -1.5px; line-height: 1; font-variant-numeric: tabular-nums; display: block; }
+  .multi-note { font-size: 12.5px; color: var(--ink-soft); line-height: 1; }
   .start-btn {
     border: 0;
     background: var(--yolk);
@@ -905,8 +915,19 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'chip' + (i === state.active ? ' on' : '');
-      b.append(document.createTextNode(eggName(e)));
+      const name = document.createElement('span');
+      name.className = 'chip-name';
+      name.textContent = eggName(e);
+      b.appendChild(name);
       if (state.eggs.length > 1) {
+        // Varje äggs egen koktid, så olika ägg tydligt skiljer sig åt.
+        const d = DONENESS.find((x) => x.key === e.doneness);
+        const tmp = TEMPS.find((x) => x.key === e.temp);
+        const r = cookSeconds(e.grams, tmp.c, d.yolkC, state.alt);
+        const time = document.createElement('span');
+        time.className = 'chip-time';
+        time.textContent = r.seconds == null ? '—' : fmt(r.seconds);
+        b.appendChild(time);
         const x = document.createElement('span');
         x.className = 'x';
         x.textContent = '×';

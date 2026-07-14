@@ -243,17 +243,22 @@ export default function App() {
                   {eggName(e)}
                 </Text>
                 {eggs.length > 1 && (
-                  <Pressable
-                    hitSlop={8}
-                    style={[styles.chipX, i === active && styles.chipXOn]}
-                    accessibilityLabel="Ta bort ägget"
-                    onPress={() => {
-                      setEggs((prev) => prev.filter((_, j) => j !== i));
-                      setActive((a) => Math.min(a > i ? a - 1 : a, eggs.length - 2));
-                    }}
-                  >
-                    <Text style={styles.chipXText}>×</Text>
-                  </Pressable>
+                  <>
+                    <Text style={styles.chipTime}>
+                      {results[i].seconds == null ? '—' : formatTime(results[i].seconds!)}
+                    </Text>
+                    <Pressable
+                      hitSlop={8}
+                      style={[styles.chipX, i === active && styles.chipXOn]}
+                      accessibilityLabel="Ta bort ägget"
+                      onPress={() => {
+                        setEggs((prev) => prev.filter((_, j) => j !== i));
+                        setActive((a) => Math.min(a > i ? a - 1 : a, eggs.length - 2));
+                      }}
+                    >
+                      <Text style={styles.chipXText}>×</Text>
+                    </Pressable>
+                  </>
                 )}
               </Pressable>
             ))}
@@ -335,7 +340,7 @@ export default function App() {
           </Text>
         ) : (
           <>
-            <View>
+            <View style={styles.footerInfo}>
               <Text style={font.label}>{L.cookTime}</Text>
               <Text style={styles.footerTime}>{formatTime(times[times.length - 1])}</Text>
               {eggs.length > 1 && (
@@ -435,6 +440,16 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 13, fontWeight: '500', color: colors.inkSoft },
   chipTextOn: { color: colors.ink, fontWeight: '600' },
+  chipTime: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.yolkDeep,
+    fontVariant: ['tabular-nums'],
+    paddingLeft: 8,
+    marginLeft: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.inkFaint,
+  },
   chipX: {
     width: 16,
     height: 16,
@@ -470,9 +485,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: space.m,
-    paddingVertical: space.s + 4,
-    paddingBottom: Platform.OS === 'ios' ? space.l : space.s + 4,
+    paddingHorizontal: space.m + 2,
+    paddingTop: space.m,
+    paddingBottom: Platform.OS === 'ios' ? space.l + 4 : space.m,
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.l,
     borderTopRightRadius: radius.l,
@@ -485,10 +500,12 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
   },
+  footerInfo: { gap: 5 },
   footerTime: {
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: '200',
-    letterSpacing: -1,
+    letterSpacing: -1.5,
+    lineHeight: 40,
     color: colors.ink,
     fontVariant: ['tabular-nums'],
   },
