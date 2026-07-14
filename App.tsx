@@ -29,6 +29,8 @@ import {
   SizeKey,
   START_TEMPS,
   TempKey,
+  TEMP_MAX,
+  TEMP_MIN,
 } from './src/physics/egg';
 import { colors, font, radius, space } from './src/theme';
 
@@ -39,10 +41,11 @@ const MAX_EGGS = 6;
 interface EggConfig {
   doneness: DonenessKey;
   grams: number;
-  temp: TempKey;
+  /** Äggets starttemperatur i °C (snabbval sätter 4 eller 20). */
+  startC: number;
 }
 
-const DEFAULT_EGG: EggConfig = { doneness: 'creamy', grams: 58, temp: 'fridge' };
+const DEFAULT_EGG: EggConfig = { doneness: 'creamy', grams: 58, startC: 4 };
 
 const sizeLabel = (g: number) => SIZES.find((s) => s.grams === g)?.label ?? `${g} g`;
 
@@ -96,14 +99,18 @@ export default function App() {
         if (raw) {
           const saved = JSON.parse(raw);
           if (Array.isArray(saved.eggs) && saved.eggs.length) {
-            const restored = (saved.eggs as EggConfig[])
+            const restored = (saved.eggs as (EggConfig & { temp?: TempKey })[])
+              .filter((e) => DONENESS.some((d) => d.key === e.doneness))
               .slice(0, MAX_EGGS)
-              .filter(
-                (e) =>
-                  DONENESS.some((d) => d.key === e.doneness) &&
-                  START_TEMPS.some((t) => t.key === e.temp)
-              )
-              .map((e) => ({ ...e, grams: Math.min(90, Math.max(40, Math.round(e.grams) || 58)) }));
+              .map((e) => ({
+                doneness: e.doneness,
+                grams: Math.min(90, Math.max(40, Math.round(e.grams) || 58)),
+                // Migrera äldre sparade ägg från nyckel (fridge/room) till °C.
+                startC:
+                  typeof e.startC === 'number'
+                    ? Math.min(TEMP_MAX, Math.max(TEMP_MIN, Math.round(e.startC)))
+                    : START_TEMPS.find((t) => t.key === e.temp)?.celsius ?? 4,
+              }));
             if (restored.length) {
               setEggs(restored);
               setActive(Math.min(restored.length - 1, Math.max(0, saved.active | 0)));
@@ -148,7 +155,7 @@ export default function App() {
         d: DONENESS.find((d) => d.key === e.doneness)!,
         ...cookTime({
           massG: e.grams,
-          startTempC: START_TEMPS.find((t) => t.key === e.temp)!.celsius,
+          startTempC: e.startC,
           yolkTargetC: DONENESS.find((d) => d.key === e.doneness)!.yolkC,
           altitudeM: altitude,
         }),
@@ -302,15 +309,21 @@ export default function App() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(240).duration(600)} style={[styles.section, styles.divided]}>
-          <Text style={font.label}>{L.startTemp}</Text>
+          <View style={styles.rowBetween}>
+            <Text style={font.label}>{L.startTemp}</Text>
+            <Text style={styles.value}>{egg.startC} °C</Text>
+          </View>
           <Segmented
-            options={START_TEMPS.map((t) => ({
-              key: t.key,
-              label: L.tempName[t.key],
-              sub: `${t.celsius} °C`,
-            }))}
-            value={egg.temp}
-            onChange={(k) => updateEgg({ temp: k })}
+            options={START_TEMPS.map((t) => ({ key: t.key, label: L.tempName[t.key], sub: `${t.celsius} °C` }))}
+            value={START_TEMPS.find((t) => t.celsius === egg.startC)?.key ?? ('' as TempKey)}
+            onChange={(k) => updateEgg({ startC: START_TEMPS.find((t) => t.key === k)!.celsius })}
+          />
+          <Slider
+            min={TEMP_MIN}
+            max={TEMP_MAX}
+            step={1}
+            value={egg.startC}
+            onChange={(c) => updateEgg({ startC: c })}
           />
         </Animated.View>
 

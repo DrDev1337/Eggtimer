@@ -36,10 +36,14 @@ export const SIZES: { key: SizeKey; label: string; grams: number; range: string 
 
 export type TempKey = 'fridge' | 'room';
 
+/** Snabbval; exakt temperatur kan sedan finjusteras med reglaget (0–30 °C). */
 export const START_TEMPS: { key: TempKey; celsius: number }[] = [
   { key: 'fridge', celsius: 4 },
   { key: 'room', celsius: 20 },
 ];
+
+export const TEMP_MIN = 0;
+export const TEMP_MAX = 30;
 
 export type DonenessKey = 'soft' | 'creamy' | 'firm' | 'hard';
 
