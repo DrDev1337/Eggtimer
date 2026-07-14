@@ -643,8 +643,12 @@
     </div>
 
     <div class="section">
-      <div class="label" id="l-temp">Starttemperatur</div>
+      <div class="row">
+        <div class="label" id="l-temp">Starttemperatur</div>
+        <div class="value"><span id="temp-out">4</span> °C</div>
+      </div>
       <div class="seg" id="seg-temp"></div>
+      <input type="range" id="temp" min="0" max="30" step="1" value="4" aria-label="Starttemperatur i grader" />
     </div>
 
     <div class="section">
@@ -837,12 +841,14 @@
     { key: 'fridge', sub: '4 °C', c: 4 },
     { key: 'room', sub: '20 °C', c: 20 },
   ];
+  const TEMP_MIN = 0, TEMP_MAX = 30;
   const MAX_EGGS = 6;
+  const clampTemp = (c) => Math.min(TEMP_MAX, Math.max(TEMP_MIN, Math.round(c)));
 
   /* ===== Tillstånd, med minne mellan besök ===== */
   const STATE_KEY = 'aggtimern-state';
   const state = {
-    eggs: [{ doneness: 'creamy', grams: 58, temp: 'fridge' }],
+    eggs: [{ doneness: 'creamy', grams: 58, startC: 4 }],
     active: 0,
     alt: 0,
     lang: (navigator.language || 'sv').toLowerCase().startsWith('sv') ? 'sv' : 'en',
@@ -851,10 +857,15 @@
     const saved = JSON.parse(localStorage.getItem(STATE_KEY));
     if (saved && Array.isArray(saved.eggs) && saved.eggs.length) {
       state.eggs = saved.eggs
+        .filter((e) => DONENESS.some((d) => d.key === e.doneness))
         .slice(0, MAX_EGGS)
-        .filter((e) => DONENESS.some((d) => d.key === e.doneness) && TEMPS.some((t) => t.key === e.temp))
-        .map((e) => ({ doneness: e.doneness, grams: Math.min(90, Math.max(40, +e.grams || 58)), temp: e.temp }));
-      if (!state.eggs.length) state.eggs = [{ doneness: 'creamy', grams: 58, temp: 'fridge' }];
+        .map((e) => ({
+          doneness: e.doneness,
+          grams: Math.min(90, Math.max(40, +e.grams || 58)),
+          // Migrera äldre sparade ägg från nyckel (fridge/room) till °C.
+          startC: typeof e.startC === 'number' ? clampTemp(e.startC) : (TEMPS.find((t) => t.key === e.temp)?.c ?? 4),
+        }));
+      if (!state.eggs.length) state.eggs = [{ doneness: 'creamy', grams: 58, startC: 4 }];
       state.active = Math.min(state.eggs.length - 1, Math.max(0, +saved.active || 0));
       state.alt = Math.min(4500, Math.max(0, +saved.alt || 0));
       if (saved.lang === 'sv' || saved.lang === 'en') state.lang = saved.lang;
@@ -903,7 +914,9 @@
       activeEgg().grams = o.grams;
       $('grams').value = o.grams;
     }, (o) => ({ label: o.label })),
-    buildSeg($('seg-temp'), TEMPS, () => activeEgg().temp, (o) => (activeEgg().temp = o.key),
+    buildSeg($('seg-temp'), TEMPS,
+      () => TEMPS.find((t) => t.c === activeEgg().startC)?.key,
+      (o) => { activeEgg().startC = o.c; $('temp').value = o.c; },
       (o) => ({ label: L().tempName[o.key], sub: o.sub })),
   ];
 
@@ -922,8 +935,7 @@
       if (state.eggs.length > 1) {
         // Varje äggs egen koktid, så olika ägg tydligt skiljer sig åt.
         const d = DONENESS.find((x) => x.key === e.doneness);
-        const tmp = TEMPS.find((x) => x.key === e.temp);
-        const r = cookSeconds(e.grams, tmp.c, d.yolkC, state.alt);
+        const r = cookSeconds(e.grams, e.startC, d.yolkC, state.alt);
         const time = document.createElement('span');
         time.className = 'chip-time';
         time.textContent = r.seconds == null ? '—' : fmt(r.seconds);
@@ -962,6 +974,7 @@
     input.style.setProperty('--fill', pct + '%');
   }
   $('grams').addEventListener('input', (e) => { activeEgg().grams = +e.target.value; render(); });
+  $('temp').addEventListener('input', (e) => { activeEgg().startC = +e.target.value; render(); });
   $('alt').addEventListener('input', (e) => { state.alt = +e.target.value; render(); });
 
   /* ===== Höjd: position → exakt markhöjd via Open-Meteos höjddatabas ===== */
@@ -1000,8 +1013,7 @@
   function calcAll() {
     return state.eggs.map((e) => {
       const d = DONENESS.find((x) => x.key === e.doneness);
-      const t = TEMPS.find((x) => x.key === e.temp);
-      return { egg: e, d, t, ...cookSeconds(e.grams, t.c, d.yolkC, state.alt) };
+      return { egg: e, d, ...cookSeconds(e.grams, e.startC, d.yolkC, state.alt) };
     });
   }
 
@@ -1040,9 +1052,12 @@
     $('doneness-hint').textContent = L().yolkCenter(L().donenessDesc[act.egg.doneness], act.d.yolkC);
     $('grams-out').textContent = act.egg.grams;
     $('grams').value = act.egg.grams;
+    $('temp-out').textContent = act.egg.startC;
+    $('temp').value = act.egg.startC;
     $('alt').value = state.alt;
     $('boil-out').textContent = L().boilInfo(state.alt, sv(act.waterC));
     sliderFill($('grams'));
+    sliderFill($('temp'));
     sliderFill($('alt'));
     renderChips();
 
