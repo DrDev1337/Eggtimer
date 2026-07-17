@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
 import { Lang, STRINGS, formatDecimal } from '../i18n';
+import { startEggActivity, stopEggActivity, updateEggActivity } from '../liveActivity';
 import { formatTime } from '../physics/egg';
 import { colors, font, radius, space } from '../theme';
 import { EGG_PATH } from './EggVisual';
@@ -142,6 +143,42 @@ export function TimerScreen({ eggs, waterC, lang, onClose }: Props) {
       alarm.pause();
     };
   }, [hasDue, alarm]);
+
+  // Live Activity: nedräkning i Dynamic Island / på låsskärmen (iOS).
+  const activityId = useRef<string | null>(null);
+  useEffect(() => {
+    const first = eggs[0]; // sorterade stigande — det som blir klart först
+    activityId.current = startEggActivity(
+      first.label,
+      multi ? `${eggs.length} ägg i kastrullen` : L.boiling,
+      startAt.current + first.seconds * 1000
+    );
+    return () => {
+      stopEggActivity(activityId.current, L.finished);
+      activityId.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Spegla appens tillstånd till aktiviteten: nästa ägg, klart-läge, färdigt.
+  useEffect(() => {
+    if (!activityId.current) return;
+    if (done) {
+      stopEggActivity(activityId.current, L.finished);
+      activityId.current = null;
+    } else if (hasDue) {
+      updateEggActivity(activityId.current, `${L.takeOut} ${eggs[dueIndex].label}`, L.ready);
+    } else if (nextIndex >= 0) {
+      const nx = eggs[nextIndex];
+      updateEggActivity(
+        activityId.current,
+        nx.label,
+        multi ? `${eggs.length} ägg` : L.boiling,
+        startAt.current + nx.seconds * 1000
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasDue, nextIndex, done]);
 
   const ringProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),

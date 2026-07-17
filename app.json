@@ -39,7 +39,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#F7F3EC"
         }
-      ]
+      ],
+      "expo-live-activity"
     ]
   }
 }
