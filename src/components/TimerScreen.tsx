@@ -32,10 +32,10 @@ const SCENE = SIZE - 44;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    // I förgrunden sköter appens eget larm ljud och vibration.
+    // Låt iOS spela larmljudet även när appen är öppen — mest pålitliga vägen.
     shouldShowBanner: false,
     shouldShowList: true,
-    shouldPlaySound: false,
+    shouldPlaySound: true,
     shouldSetBadge: false,
   }),
 });
@@ -81,13 +81,17 @@ export function TimerScreen({ eggs, waterC, lang, onClose }: Props) {
           await Notifications.setNotificationChannelAsync('alarm', {
             name: 'Äggtimer',
             importance: Notifications.AndroidImportance.MAX,
-            sound: 'default',
+            sound: 'alarm.wav',
             vibrationPattern: [0, 250, 250, 250],
           });
         }
         for (const egg of eggs) {
           await Notifications.scheduleNotificationAsync({
-            content: { title: L.notifTitle, body: L.notifBody(egg.label), sound: true },
+            content: {
+              title: L.notifTitle,
+              body: L.notifBody(egg.label),
+              sound: 'alarm.wav', // vårt eget chime, bundlat via app.json
+            },
             trigger: {
               type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
               seconds: Math.max(1, egg.seconds),
