@@ -30,6 +30,15 @@
         {
           "locationWhenInUsePermission": "Äggtimern använder din position för att räkna ut höjden över havet, som påverkar vattnets kokpunkt."
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F7F3EC"
+        }
       ]
     ]
   }
