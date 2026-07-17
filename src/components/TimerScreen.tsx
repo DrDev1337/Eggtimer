@@ -1,3 +1,4 @@
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { useKeepAwake } from 'expo-keep-awake';
 import * as Notifications from 'expo-notifications';
@@ -53,9 +54,13 @@ interface Props {
   onClose: () => void;
 }
 
+// Larmljud: stigande treklang som loopar tills ägget kvitteras.
+const ALARM = require('../../assets/alarm.wav');
+
 export function TimerScreen({ eggs, waterC, lang, onClose }: Props) {
   useKeepAwake();
   const L = STRINGS[lang];
+  const alarm = useAudioPlayer(ALARM);
   const total = eggs[eggs.length - 1].seconds;
   const startAt = useRef(Date.now());
   const [now, setNow] = useState(Date.now());
@@ -116,16 +121,27 @@ export function TimerScreen({ eggs, waterC, lang, onClose }: Props) {
     return () => clearInterval(id);
   }, [eggs]);
 
-  // Ihållande haptiskt larm så länge något ägg väntar på att tas upp.
+  // Spela larmet även när telefonen står på ljudlöst — en äggklocka måste höras.
+  useEffect(() => {
+    alarm.loop = true;
+    setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'doNotMix' }).catch(() => {});
+  }, [alarm]);
+
+  // Ihållande ljud + vibration så länge något ägg väntar på att tas upp.
   const hasDue = dueIndex >= 0;
   useEffect(() => {
     if (!hasDue) return;
+    alarm.seekTo(0).catch(() => {});
+    alarm.play();
     const buzz = () =>
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     buzz();
     const id = setInterval(buzz, 1400);
-    return () => clearInterval(id);
-  }, [hasDue]);
+    return () => {
+      clearInterval(id);
+      alarm.pause();
+    };
+  }, [hasDue, alarm]);
 
   const ringProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRCUMFERENCE * (1 - progress.value),
